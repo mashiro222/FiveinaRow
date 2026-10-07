@@ -73,9 +73,15 @@ class RapfiEngine {
     if (/Evaluator set to mix9svq/.test(line)) this.nnueConfigured = true;
     if (/nnue: weight loaded/.test(line)) this.neuralLoaded = true;
     // Never hide a failed neural evaluator behind the engine's classical fallback.
-    if (/^ERROR\b|Evaluator .* disabled|Failed to load from|failed to initialized/i.test(line)) return this.fail(new Error('Rapfi 神经网络加载或计算失败，请重新安装或重试。'));
+    if (/^ERROR\b|Evaluator .* disabled|Failed to load from|failed to initialized/i.test(line)) return this.fail(Object.assign(new Error('Rapfi 神经网络加载或计算失败，请重新安装或重试。'), {engineDetail: line}));
     const pending = this.pending;
     if (!pending) return;
+    if (pending.waiting && /^name="Rapfi",/.test(line)) {
+      pending.waiting = false;
+      clearInterval(pending.readyTimer);
+      this.child.stdin.write(pending.commands.join('\n') + '\n');
+      return;
+    }
     const info = line.match(/^INFO (DEPTH|TOTALNODES|TOTALTIME) (\d+)$/);
     if (info) {
       pending.stats[{DEPTH:'depth',TOTALNODES:'nodes',TOTALTIME:'searchMs'}[info[1]]] = Number(info[2]);
@@ -99,7 +105,7 @@ class RapfiEngine {
     this.cancel();
     try { this.start(); } catch (error) { return Promise.reject(error); }
     return new Promise((resolve, reject) => {
-      const pending = { position, resolve, reject, started: Date.now(), lastProgress: 0, stats: {depth:0,nodes:0,searchMs:0} };
+      const pending = { position, resolve, reject, started: Date.now(), lastProgress: 0, waiting: true, stats: {depth:0,nodes:0,searchMs:0} };
       this.pending = pending;
       pending.timer = setTimeout(() => this.fail(new Error('Rapfi 响应超时，请点击重试。')), position.thinkMs + 15000);
       const commands = [];
@@ -110,7 +116,14 @@ class RapfiEngine {
         this.neuralLoaded = false;
       }
       commands.push(`INFO TIMEOUT_TURN ${position.thinkMs}`, 'INFO TIMEOUT_MATCH 2147483647', 'INFO TIME_LEFT 2147483647', boardCommand(position));
-      this.child.stdin.write(commands.join('\n') + '\n');
+      pending.commands = commands;
+      // Rapfi prints its move just before clearing its `thinking` flag. Commands
+      // received in that gap are discarded token by token (not line by line).
+      // ABOUT has no arguments and is safe to retry until the engine answers;
+      // only then send settings/BOARD. This matters on Windows pipe scheduling.
+      const probe = () => { if (this.pending === pending && pending.waiting) this.child.stdin.write('ABOUT\n'); };
+      pending.readyTimer = setInterval(probe, 25);
+      probe();
     });
   }
   cancel(id) {
@@ -124,7 +137,7 @@ class RapfiEngine {
     this.child = null;
     this.boardKey = null;
     if (child && !child.killed) child.kill();
-    if (pending) { clearTimeout(pending.timer); pending.reject(error); }
+    if (pending) { clearTimeout(pending.timer); clearInterval(pending.readyTimer); pending.reject(error); }
   }
   close() { this.fail(Object.assign(new Error('引擎已关闭'), { code: 'CANCELLED' })); }
 }

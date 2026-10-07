@@ -47,8 +47,21 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Restore compiled engine
+        id: rapfi-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: native/rapfi
+          key: rapfi-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('scripts/build-engine.mjs', 'third_party/rapfi/**') }}
       - name: Build pinned Rapfi with pretrained NNUE models
+        if: steps.rapfi-cache.outputs.cache-hit != 'true'
         run: pnpm build:engine --arch=${{ matrix.arch }}
+      - name: Cache compiled engine
+        if: steps.rapfi-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: native/rapfi
+          key: ${{ steps.rapfi-cache.outputs.cache-primary-key }}
       - name: Native neural engine tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:native

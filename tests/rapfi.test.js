@@ -20,6 +20,22 @@ test('Piskvork positions preserve move order and relative self/opponent colors',
 test('native adapter rejects malformed positions, duplicate points, non-15 Renju and excessive compute',()=>{
  for(const bad of [position([112,112]),position([-1]),position([225]),position([],{size:14}),position([],{thinkMs:Infinity}),position([],{thinkMs:60001}),position([],{id:';quit'}),position([],{size:19,forbidden:true})])assert.throws(()=>validatePosition(bad));
 });
+test('commands wait for readiness when a move was printed before search cleanup finished',async()=>{
+ const guarded=new RapfiEngine(directory);const writes=[];let probes=0;
+ guarded.start=()=>{guarded.child={stdin:{write(text){
+  writes.push(text);
+  if(text==='ABOUT\n'){
+   if(++probes===3)queueMicrotask(()=>guarded.receive('name="Rapfi", version="test"'));
+  }else{
+   queueMicrotask(()=>{guarded.receive('MESSAGE Evaluator set to mix9svq');guarded.receive('7,7');});
+  }
+ }},kill(){},killed:false};};
+ try{
+  const result=await guarded.analyze(position([]));
+  assert.equal(result.index,112);assert.deepEqual(writes.slice(0,3),['ABOUT\n','ABOUT\n','ABOUT\n']);
+  assert.equal(writes.length,4);assert.match(writes[3],/INFO RULE 0\nSTART 15/);
+ }finally{guarded.close();}
+});
 test('native Rapfi loads pretrained networks for every supported size and both Renju colors',{skip:!native,timeout:30000},async()=>{
  for(const [size,forbidden,moves] of [[13,false,[84]],[15,false,[112]],[19,false,[180]],[15,true,[112]],[15,true,[112,113]]]){
   const r=await engine.analyze(position(moves,{size,forbidden}));
