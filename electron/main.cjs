@@ -19,7 +19,7 @@ ipcMain.handle('rapfi:analyze', async (event, position) => {
 ipcMain.on('rapfi:cancel', (event, id) => { if (trusted(event) && Number.isSafeInteger(id)) engines.get(event.sender.id).cancel(id); });
 ipcMain.handle('rapfi:evaluate', async (event, position) => {
   if (!trusted(event)) throw new Error('Untrusted sender');
-  try { return { ok: true, ...await evaluators.get(event.sender.id).analyze({ ...position, thinkMs: 1500 }) }; }
+  try { return { ok: true, ...await evaluators.get(event.sender.id).analyze({ ...position, strength: 100, thinkMs: 1500 }) }; }
   catch (error) { return { ok: false, id: position?.id, cancelled: error.code === 'CANCELLED', error: error.message }; }
 });
 ipcMain.on('rapfi:cancelEvaluation', (event, id) => { if (trusted(event) && Number.isSafeInteger(id)) evaluators.get(event.sender.id)?.cancel(id); });

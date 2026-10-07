@@ -18,7 +18,7 @@ test('Piskvork positions preserve move order and relative self/opponent colors',
  assert.equal(boardCommand(position([])),'BOARD\nDONE');
 });
 test('native adapter rejects malformed positions, duplicate points, non-15 Renju and excessive compute',()=>{
- for(const bad of [position([112,112]),position([-1]),position([225]),position([],{size:14}),position([],{thinkMs:Infinity}),position([],{thinkMs:60001}),position([],{id:';quit'}),position([],{size:19,forbidden:true})])assert.throws(()=>validatePosition(bad));
+ for(const bad of [position([112,112]),position([-1]),position([225]),position([],{size:14}),position([],{thinkMs:Infinity}),position([],{thinkMs:60001}),position([],{id:';quit'}),position([],{size:19,forbidden:true}),...[-1,101,1.5,'20',null,NaN].map(strength=>position([],{strength}))])assert.throws(()=>validatePosition(bad));
 });
 test('commands wait for readiness when a move was printed before search cleanup finished',async()=>{
  const guarded=new RapfiEngine(directory);const writes=[];let probes=0;
@@ -102,4 +102,48 @@ test('corrupted model fails integrity verification before spawning any engine',a
   const invalid=new RapfiEngine(temp);
   await assert.rejects(invalid.analyze(position([112])),/文件损坏/);assert.equal(invalid.child,null);
  } finally {await fs.rm(temp,{recursive:true,force:true});}
+});
+
+test('strength changes clear full-strength caches, while equal-strength moves reuse the process',async()=>{
+ const adapter=new RapfiEngine(directory), writes=[];let starts=0,kills=0;
+ adapter.start=()=>{
+  if(adapter.child)return;
+  starts++;
+  adapter.child={stdin:{write(text){
+   writes.push(text);
+   queueMicrotask(()=>{
+    if(text==='ABOUT\n')adapter.receive('name="Rapfi", version="test"');
+    else {adapter.receive('MESSAGE Evaluator set to mix9svq');adapter.receive('6,6');}
+   });
+  }},kill(){kills++;},killed:false};
+ };
+ try{
+  for(const strength of [20,20,100,20,0])assert.equal((await adapter.analyze(position([112,113],{strength}))).strength,strength);
+  assert.equal(starts,4);assert.equal(kills,3);
+  const commands=writes.filter(w=>w.startsWith('INFO'));
+  assert.deepEqual(commands.map(c=>Number(c.match(/INFO STRENGTH (\d+)/)[1])),[20,20,100,20,0]);
+  assert.ok(!commands[1].includes('START 15'),'Same-strength search should retain its table');
+  assert.ok(commands[2].includes('START 15')&&commands[3].includes('START 15'),'Hints and coach each need fresh initialization');
+  assert.equal(validatePosition(position([])).strength,100);
+ }finally{adapter.close();}
+});
+test('native coach limits depth, handles every board and Renju color, and survives full hints',{skip:!native,timeout:30000},async()=>{
+ const coach=new RapfiEngine(directory,{threads:2,hashMB:64});
+ try{
+  for(const [size,forbidden,moves] of [[13,false,[84,85]],[15,false,[112,113]],[19,false,[180,181]],[15,true,[112]],[15,true,[112,113]]]){
+   const r=await coach.analyze(position(moves,{size,forbidden,strength:0,thinkMs:1000}));
+   const board=createBoard(size);moves.forEach((i,ply)=>board[i]=ply%2+1);
+   assert.equal(inspectMove(board,r.index,moves.length%2+1,{size,forbidden}).legal,true);
+   assert.ok(r.neuralLoaded);assert.ok(r.depth>0&&r.depth<=4,`Coach 0 depth was ${r.depth}`);
+  }
+  const moves=[112,113,97,127];
+  const full=await coach.analyze(position(moves,{strength:100,thinkMs:1000}));
+  assert.ok(full.depth>4);
+  const low=await coach.analyze(position(moves,{strength:20,thinkMs:1000}));
+  assert.ok(low.depth>0&&low.depth<=7,`Coach 20 depth was ${low.depth}`);
+  const forbidden=[111,96,113,128,97,98,127,126];
+  const r=await coach.analyze(position(forbidden,{forbidden:true,strength:0,thinkMs:1000}));
+  const board=createBoard();forbidden.forEach((i,ply)=>board[i]=ply%2+1);
+  assert.notEqual(r.index,112);assert.equal(inspectMove(board,r.index,1,{forbidden:true}).legal,true);
+ }finally{coach.close();}
 });

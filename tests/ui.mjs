@@ -72,10 +72,39 @@ try{
  // Renju neural networks require 15x15, while local boards remain unrestricted.
  await page.locator('[data-action="new"]').first().click();await page.selectOption('[name="mode"]','ai');await page.locator('[name="forbidden"]').check();
  assert.equal(await page.locator('[name="size"]').inputValue(),'15');assert.equal(await page.locator('[name="size"] option[value="19"]').evaluate(option=>option.disabled),true);
- assert.equal(await page.locator('[name="level"]').count(),0);await page.selectOption('[name="thinkMs"]','60000');
+ assert.equal(await page.locator('[name="level"]').inputValue(),'rapfi');assert.equal(await page.locator('#coach-control').isVisible(),false);await page.selectOption('[name="thinkMs"]','60000');
  await page.screenshot({path:'test-results/08-new-game.png',fullPage:true});
  await page.locator('#new-form button[type="submit"]').click();assert.equal(await page.locator('[data-cell]').count(),225);
  assert.match(await page.locator('.match-panel').textContent(),/60 秒/);
+ // Adjustable coach: actual native moves, persisted strength, independent stats, and full hints.
+ await page.locator('[data-action="new"]').first().click();await page.selectOption('[name="level"]','rapfi-coach');
+ assert.equal(await page.locator('[name="thinkMs"]').inputValue(),'1000');assert.equal(await page.locator('#coach-control').isVisible(),true);
+ await page.locator('[name="strength"]').fill('0');assert.equal(await page.locator('#strength-value').textContent(),'0');
+ await page.screenshot({path:'test-results/13-coach-settings.png',fullPage:true});
+ await page.selectOption('[name="human"]','1');await page.locator('#new-form button[type="submit"]').click();
+ assert.match(await page.locator('.match-panel').textContent(),/陪练强度 0/);
+ await page.locator('[data-cell="112"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-cell].occupied').length===2,{},{timeout:15000});
+ await page.reload();await page.waitForSelector('[data-cell]');assert.equal(await page.locator('[data-cell].occupied').count(),2);
+ assert.match(await page.locator('.match-panel').textContent(),/陪练强度 0/);assert.doesNotMatch(await page.locator('.arena-top .pill').textContent(),/辅助/);
+ await page.screenshot({path:'test-results/14-coach-play.png',fullPage:true});
+ await page.locator('[data-action="resign"]').click();await page.locator('[data-action="confirm-resign"]').click();
+ await page.locator('[data-page="stats"]').first().click();assert.equal(await page.locator('#stats-strength').inputValue(),'0');
+ assert.match(await page.locator('.stats-cards').textContent(),/正式对局1/);assert.match(await page.locator('tbody').textContent(),/Rapfi 陪练 · 0/);
+ await page.selectOption('#stats-strength','20');assert.match(await page.locator('.stats-cards').textContent(),/正式对局0/);
+ await page.locator('[data-action="stats-level"][data-level="rapfi"]').click();assert.match(await page.locator('.stats-cards').textContent(),/正式对局1/);
+ await page.locator('[data-action="stats-level"][data-level="rapfi-coach"]').click();assert.match(await page.locator('.stats-cards').textContent(),/正式对局1/);
+ await page.screenshot({path:'test-results/15-coach-stats.png',fullPage:true});
+ await page.locator('[data-page="play"]').first().click();await page.locator('[data-action="again"]').click();
+ assert.match(await page.locator('.match-panel').textContent(),/陪练强度 0/);
+ await page.locator('[data-cell="112"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-cell].occupied').length===2,{},{timeout:15000});
+ await page.locator('[data-action="hint"]').click();await page.waitForSelector('.hint-ring',{timeout:15000});
+ assert.match(await page.locator('.arena-top .pill').textContent(),/辅助/);
+ await page.locator('.intersection.hint').click();await page.waitForFunction(()=>document.querySelectorAll('[data-cell].occupied').length===4,{},{timeout:15000});
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('yijian-save-v1')));
+ assert.equal(saved.game.settings.level,'rapfi-coach');assert.equal(saved.game.settings.strength,0);
+ await page.locator('[data-action="new"]').first().click();await page.selectOption('[name="mode"]','local');
+ assert.equal(await page.locator('[name="strength"]').isDisabled(),true);assert.equal(await page.locator('#coach-control').isVisible(),false);
+ await page.locator('[data-action="close"]').click();
  // Upgrade a v1.0 save without erasing history or mixing win rates.
  await page.evaluate(()=>{
   const save=JSON.parse(localStorage.getItem('yijian-save-v1'));save.settings.level='expert';delete save.settings.thinkMs;

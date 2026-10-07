@@ -67,3 +67,23 @@ test('completed old games keep their opponent identity; new Rapfi records carry 
  const fresh=newGame({...DEFAULTS,thinkMs:60000});fresh.result={winner:1};
  const records=recordResult([],fresh);assert.equal(records[0].engineId,DEFAULTS.engineId);assert.equal(records[0].thinkMs,60000);assert.equal(summarize(records).wins,1);
 });
+
+test('coach saves and results retain their strength without becoming legacy practice',()=>{
+ const settings={...DEFAULTS,level:'rapfi-coach',strength:0,thinkMs:500},game=newGame(settings,[112,113]);
+ const restored=load({getItem:()=>JSON.stringify({version:1,settings,game,records:[]})});
+ assert.deepEqual(restored.settings,settings);assert.deepEqual(restored.game,game);
+ let records=[];
+ for(const [level,strength,winner,assisted] of [['rapfi',100,1,false],['rapfi-coach',0,1,false],['rapfi-coach',20,2,false],['rapfi-coach',0,0,false],['rapfi-coach',0,2,true]]){
+  const g=newGame({...settings,level,strength});g.result={winner,reason:'测试'};g.assisted=assisted;records=recordResult(records,g);
+ }
+ assert.equal(summarize(records).total,1);assert.equal(summarize(records,'rapfi-coach').total,3);
+ assert.equal(summarize(records,'rapfi-coach',0).rate,50);assert.equal(summarize(records,'rapfi-coach',20).losses,1);
+ const history=load({getItem:()=>JSON.stringify({version:1,settings,game,records})});assert.deepEqual(history.records,records);
+});
+test('v1.2 Rapfi saves retain full strength and historical statistics',()=>{
+ const settings={...DEFAULTS};delete settings.strength;
+ const game=newGame(settings,[112,113]),records=[{at:1,level:'rapfi',result:'win'}];
+ const restored=load({getItem:()=>JSON.stringify({version:1,settings,game,records})});
+ assert.equal(restored.game.settings.strength,100);assert.equal(restored.game.assisted,false);
+ assert.equal(summarize(restored.records).rate,100);
+});

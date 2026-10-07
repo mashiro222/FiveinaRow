@@ -6,11 +6,12 @@ const crypto = require('node:crypto');
 
 const ENGINE_ID = 'rapfi-nnue-3c94c2a-e32ad77';
 function validatePosition(position) {
-  const { id, size, moves, forbidden, thinkMs = 10000 } = position || {};
+  const { id, size, moves, forbidden, thinkMs = 10000, strength = 100 } = position || {};
   if (!Number.isSafeInteger(id) || ![13,15,19].includes(size) || !Array.isArray(moves) || moves.length >= size * size || new Set(moves).size !== moves.length || moves.some(i => !Number.isInteger(i) || i < 0 || i >= size * size) || typeof forbidden !== 'boolean') throw new Error('无效的棋盘局面');
   if (forbidden && size !== 15) throw new Error('Rapfi 禁手神经网络支持 15 路棋盘，请新开一局 15 路对局。');
   if (!Number.isInteger(thinkMs) || thinkMs < 100 || thinkMs > 60000) throw new Error('无效的思考时限');
-  return { id, size, moves: [...moves], forbidden, thinkMs };
+  if (!Number.isInteger(strength) || strength < 0 || strength > 100) throw new Error('无效的 AI 强度');
+  return { id, size, moves: [...moves], forbidden, thinkMs, strength };
 }
 function boardCommand({ size, moves }) {
   const self = moves.length % 2;
@@ -29,6 +30,7 @@ class RapfiEngine {
     this.child = null;
     this.pending = null;
     this.boardKey = null;
+    this.strength = null;
     this.verified = false;
     this.nnueConfigured = false;
     this.neuralLoaded = false;
@@ -108,7 +110,7 @@ class RapfiEngine {
     if (x >= size || y >= size || moves.includes(index) || !this.nnueConfigured) return this.fail(new Error('Rapfi 返回了无效落点或未启用神经网络。'));
     this.pending = null;
     clearTimeout(pending.timer);
-    pending.resolve({ id, index, engineId: ENGINE_ID, engine: 'Rapfi NNUE', neuralLoaded: this.neuralLoaded, threads: this.threads, elapsedMs: Date.now() - pending.started, ...pending.stats });
+    pending.resolve({ id, index, engineId: ENGINE_ID, engine: 'Rapfi NNUE', strength: pending.position.strength, neuralLoaded: this.neuralLoaded, threads: this.threads, elapsedMs: Date.now() - pending.started, ...pending.stats });
   }
   analyze(input) {
     let position;
@@ -117,8 +119,11 @@ class RapfiEngine {
     // Live analysis can replace positions within milliseconds, including after
     // the engine's immediate opening reply. Use a fresh protocol/search state
     // for this mode; ordinary AI games keep their warm transposition table.
-    if (this.freshSearch) this.close();
+    // A full-strength hint must not leave a deep search table for the coach.
+    // Restart on strength changes; preserve warm caches within the same mode.
+    if (this.freshSearch || (this.strength !== null && this.strength !== position.strength)) this.close();
     try { this.start(); } catch (error) { return Promise.reject(error); }
+    this.strength = position.strength;
     return new Promise((resolve, reject) => {
       const pending = { position, resolve, reject, started: Date.now(), lastProgress: 0, waiting: true, stats: {depth:0,nodes:0,searchMs:0} };
       this.pending = pending;
@@ -132,11 +137,11 @@ class RapfiEngine {
         // immediately can destroy a worker before its init task has started,
         // deadlocking Rapfi's SearchThread destructor on Windows. Set the final
         // pool size first so START never creates a short-lived default worker.
-        commands.push(`INFO RULE ${position.forbidden ? 4 : 0}`, `INFO THREAD_NUM ${this.threads}`, `START ${position.size}`, `INFO HASH_SIZE ${this.hashMB * 1024}`, 'INFO STRENGTH 100', 'INFO SHOW_DETAIL 2', 'INFO PONDERING 0');
+        commands.push(`INFO RULE ${position.forbidden ? 4 : 0}`, `INFO THREAD_NUM ${this.threads}`, `START ${position.size}`, `INFO HASH_SIZE ${this.hashMB * 1024}`, 'INFO SHOW_DETAIL 2', 'INFO PONDERING 0');
         this.boardKey = key;
         this.neuralLoaded = false;
       }
-      commands.push(`INFO TIMEOUT_TURN ${position.thinkMs}`, 'INFO TIMEOUT_MATCH 2147483647', 'INFO TIME_LEFT 2147483647', boardCommand(position));
+      commands.push(`INFO STRENGTH ${position.strength}`, `INFO TIMEOUT_TURN ${position.thinkMs}`, 'INFO TIMEOUT_MATCH 2147483647', 'INFO TIME_LEFT 2147483647', boardCommand(position));
       pending.commands = commands;
       // Rapfi prints its move just before clearing its `thinking` flag. Commands
       // received in that gap are discarded token by token (not line by line).
@@ -157,6 +162,7 @@ class RapfiEngine {
     const child = this.child;
     this.child = null;
     this.boardKey = null;
+    this.strength = null;
     if (child && !child.killed) child.kill();
     if (pending) { clearTimeout(pending.timer); clearInterval(pending.readyTimer); pending.reject(error); }
   }

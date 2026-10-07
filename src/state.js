@@ -1,6 +1,6 @@
-import { ENGINE, THINK_TIMES } from './ai.js';
+import { ENGINE, COACH, normalizeAI } from './ai.js';
 import { createBoard, inspectMove, winningLine } from './engine.js';
-export const DEFAULTS = { mode: 'ai', level: 'rapfi', engineId: ENGINE.id, thinkMs: ENGINE.thinkMs, human: 1, size: 15, forbidden: false, board: 'wood', background: 'ivory', pieces: 'classic', numbers: false, sound: true };
+export const DEFAULTS = { mode: 'ai', level: 'rapfi', strength: 100, engineId: ENGINE.id, thinkMs: ENGINE.thinkMs, human: 1, size: 15, forbidden: false, board: 'wood', background: 'ivory', pieces: 'classic', numbers: false, sound: true };
 export function newGame(settings, moves = [], practice = false) {
   return { id: globalThis.crypto.randomUUID(), settings: { ...settings }, moves: [...moves], result: null, assisted: practice, practice, created: Date.now() };
 }
@@ -37,10 +37,10 @@ export function recordResult(records, game) {
   if (!game.result || game.settings.mode !== 'ai' || records.some(r => r.id === game.id)) return records;
   const winner = game.result.winner;
   const result = winner === 0 ? 'draw' : winner === game.settings.human ? 'win' : 'loss';
-  return [{ id: game.id, at: Date.now(), level: game.settings.level, engineId: game.settings.engineId, thinkMs: game.settings.thinkMs, human: game.settings.human, forbidden: game.settings.forbidden, size: game.settings.size, result, assisted: game.assisted || game.practice, moves: [...game.moves], reason: game.result.reason }, ...records].slice(0, 1000);
+  return [{ id: game.id, at: Date.now(), level: game.settings.level, strength: normalizeAI(game.settings).strength, engineId: game.settings.engineId, thinkMs: game.settings.thinkMs, human: game.settings.human, forbidden: game.settings.forbidden, size: game.settings.size, result, assisted: game.assisted || game.practice, moves: [...game.moves], reason: game.result.reason }, ...records].slice(0, 1000);
 }
-export function summarize(records, level = 'rapfi') {
-  const games = records.filter(r => !r.assisted && (!level || r.level === level));
+export function summarize(records, level = 'rapfi', strength = null) {
+  const games = records.filter(r => !r.assisted && (!level || r.level === level) && (strength === null || r.strength === strength));
   const wins = games.filter(r => r.result === 'win').length;
   return { total: games.length, wins, losses: games.filter(r => r.result === 'loss').length, draws: games.filter(r => r.result === 'draw').length, rate: games.length ? Math.round(wins / games.length * 100) : 0 };
 }
@@ -49,19 +49,19 @@ export function load(storage) {
   try {
     const data = JSON.parse(storage.getItem(KEY));
     if (!data || data.version !== 1) return null;
-    const s = { ...DEFAULTS, ...data.settings };
-    if (![13, 15, 19].includes(s.size) || !['ai', 'local'].includes(s.mode) || ![1, 2].includes(s.human) || !['rapfi', 'beginner', 'casual', 'strong', 'expert'].includes(s.level)) return null;
-    s.level = 'rapfi'; s.engineId = ENGINE.id;
-    if (!THINK_TIMES.includes(s.thinkMs)) s.thinkMs = ENGINE.thinkMs;
+    let s = { ...DEFAULTS, ...data.settings };
+    const levels = ['rapfi', COACH.level, 'beginner', 'casual', 'strong', 'expert'];
+    if (![13, 15, 19].includes(s.size) || !['ai', 'local'].includes(s.mode) || ![1, 2].includes(s.human) || !levels.includes(s.level)) return null;
+    s = normalizeAI(s);
     let game = data.game;
     if (game) {
       if (!Array.isArray(game.moves) || ![13, 15, 19].includes(game.settings?.size) || game.moves.length > game.settings.size ** 2 || new Set(game.moves).size !== game.moves.length || game.moves.some(i => !Number.isInteger(i) || i < 0 || i >= game.settings.size ** 2) || !['ai', 'local'].includes(game.settings.mode) || ![1, 2].includes(game.settings.human)) game = null;
     }
     if (game && !game.result) {
-      if (game.settings.level !== 'rapfi' && game.settings.mode === 'ai' && game.moves.length) { game.assisted = true; game.migrated = true; }
-      game.settings = { ...game.settings, level: 'rapfi', engineId: ENGINE.id, thinkMs: THINK_TIMES.includes(game.settings.thinkMs) ? game.settings.thinkMs : ENGINE.thinkMs };
+      if (!['rapfi', COACH.level].includes(game.settings.level) && game.settings.mode === 'ai' && game.moves.length) { game.assisted = true; game.migrated = true; }
+      game.settings = normalizeAI(game.settings);
     }
-    const records = Array.isArray(data.records) ? data.records.filter(r => r && ['win', 'loss', 'draw'].includes(r.result) && ['rapfi', 'beginner', 'casual', 'strong', 'expert'].includes(r.level) && typeof r.at === 'number').slice(0, 1000) : [];
+    const records = Array.isArray(data.records) ? data.records.filter(r => r && ['win', 'loss', 'draw'].includes(r.result) && levels.includes(r.level) && typeof r.at === 'number').slice(0, 1000) : [];
     return { settings: s, game, records };
   } catch { return null; }
 }
