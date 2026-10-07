@@ -10,6 +10,7 @@ import { WebSocket } from 'ws';
 let offset=0;
 const hub=new RoomHub({now:()=>Date.now()+offset});
 const service=await createRoomServer({port:0,host:'127.0.0.1',hub});
+let serviceClosed=false;
 const url=`ws://127.0.0.1:${service.port}/room`;
 const apps=[],dirs=[],errors=[];
 const executablePath=process.env.GAME_EXECUTABLE || undefined;
@@ -85,12 +86,20 @@ try {
   else console.log('SKIP: OS does not allow the test process to reach this machine via its LAN IP; built-in host verified over loopback.');
  }
  await a.locator('[data-online="create"]').click();await a.waitForSelector('.online-seats');
+ await a.locator('[data-online="leave"]').click();await a.waitForSelector('#online-connect-form');
+ await a.locator('#online-server').fill(url);await a.locator('#online-connect-form button').click();
+ await a.waitForFunction(()=>document.querySelector('#online-connection-status')?.textContent==='已连接');
+ await a.locator('[data-online="create"]').click();await a.waitForSelector('.online-seats');
+ assert.equal(await a.locator('.invite-address').inputValue(),url,'Switching services must update the invitation address');
+ await service.close();serviceClosed=true;
+ await a.waitForSelector('.online-notice');await a.locator('[data-online="leave"]').click();await a.locator('[data-online="abandon"]').click();
+ await a.waitForSelector('#online-connect-form');assert.equal(await a.locator('.online-seats').count(),0);
  // Local themes and offline saved games survive the whole online session.
  await a.locator('[data-page="play"]').first().click();assert.equal(await a.locator('[data-cell].occupied').count(),0);
  assert.deepEqual(errors,[]);
  console.log('PASS: three desktop clients, named seats, spectator restrictions, shared rules/clocks, Rapfi probabilities, hide/show, reconnect, resignation, rematch, forbidden move, timeout and seat handover.');
 } finally {
  for(const app of apps.reverse())await app.close();
- await service.close();for(const dir of dirs)await fs.rm(dir,{recursive:true,force:true});
+ if(!serviceClosed)await service.close();for(const dir of dirs)await fs.rm(dir,{recursive:true,force:true});
  if(errors.length)console.error(errors);
 }

@@ -57,13 +57,14 @@ export class OnlineRoom {
   statusText() {
     return { idle:'尚未连接', connecting:'正在连接…', connected:'已连接', disconnected:'连接断开，等待重连', replaced:'此会话已在另一窗口打开' }[this.client.status];
   }
+  hostingCurrentService() { return this.client.url === this.hostLocal || this.hostAddresses.includes(this.client.url); }
   page() {
     const { esc, icon, title } = this.h, c = this.client, r = c.room;
     if (!r) return `${title('PLAY TOGETHER', '远近之间，共下一局。', '用四位房间号相约，入座对弈，也可以静静旁观。')}
       <section class="panel online-connection"><div><span class="eyebrow">连接棋室</span><h2>先连接同一个房间服务</h2><p>同一 Wi-Fi 下，一人开启局域网服务，再把地址发给朋友。跨网络使用公共服务地址。</p></div>
       <form id="online-connect-form"><label class="field">房间服务地址<input name="server" id="online-server" type="text" value="${esc(c.url)}" placeholder="wss://你的房间服务/room" required spellcheck="false" autocomplete="off"/></label><button class="secondary" type="submit">连接服务</button></form>
       <div class="online-connect-bottom"><span class="connection-dot ${c.status === 'connected' ? 'connected' : ''}"></span><span id="online-connection-status">${this.statusText()}</span>${window.roomsHost ? '<button class="small-link" data-online="host">开启局域网服务 →</button>' : ''}</div>
-      ${this.hostAddresses.length ? `<div class="share-address"><b>朋友在同一 Wi-Fi 下填写这个地址</b>${this.hostAddresses.map(a => `<code>${esc(a)}</code>`).join('')}<small>保持此电脑和游戏运行；系统询问时允许局域网访问。</small></div>` : ''}</section>
+      ${this.hostingCurrentService() && this.hostAddresses.length ? `<div class="share-address"><b>朋友在同一 Wi-Fi 下填写这个地址</b>${this.hostAddresses.map(a => `<code>${esc(a)}</code>`).join('')}<small>保持此电脑和游戏运行；系统询问时允许局域网访问。</small></div>` : ''}</section>
       <div class="online-lobby"><section class="panel online-lobby-card"><span class="online-card-number">01 / 邀请朋友</span><h2>开一间棋室</h2><p>房间号由服务自动分配。进入后选择执黑或执白，双方准备即可开始。</p><button class="primary" data-online="create">${icon('grid')} 创建房间 ${icon('arrow')}</button></section>
       <section class="panel online-lobby-card"><span class="online-card-number">02 / 赴一场棋约</span><h2>输入房间号</h2><p>进入时默认旁观，有空位即可取名入座。</p><form id="online-join-form"><input name="code" aria-label="四位房间号" class="room-code-input" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" placeholder="0000" required autocomplete="off"/><button class="primary" type="submit">进入房间 ${icon('arrow')}</button></form></section></div>
       <p class="online-footnote">房间号仅在同一服务内有效 · 空房间保留 10 分钟 · 联机棋盘为 15 路 · 无需注册账号</p>`;
@@ -85,7 +86,7 @@ export class OnlineRoom {
       </section><aside class="game-rail"><section class="panel online-rate"><div class="section-label">Rapfi · 局势胜率<label class="rate-toggle"><input type="checkbox" id="online-show-rate" ${this.showRate ? 'checked' : ''}/>显示</label></div><div id="online-rate-body">${this.rateMarkup()}</div></section>
       <section class="panel online-rules"><div class="section-label">本局规则 <span>${owner ? '房主设置' : '由房主设置'}</span></div><form id="online-rules-form"><label class="rule-switch"><div><b>黑棋禁手</b><small>禁止三三、四四、长连</small></div><input type="checkbox" name="forbidden" ${r.settings.forbidden ? 'checked' : ''} ${!owner || playing || !connected ? 'disabled' : ''}/></label><label class="field">每手限时<select name="turnSeconds" ${!owner || playing || !connected ? 'disabled' : ''}>${[[30,'30 秒'],[60,'60 秒'],[120,'2 分钟']].map(([v,l])=>`<option value="${v}" ${r.settings.turnSeconds === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>${owner && !playing ? `<button class="secondary wide" type="submit" ${disabled}>保存规则</button>` : ''}</form><p class="fineprint">${playing ? '本局规则已锁定，下一局开始前可修改。' : '修改规则后双方需要重新准备。'} 禁手落点会被拦截，计时继续。超时判负。</p></section>
       <section class="panel online-watchers"><div class="section-label">旁观席 <span>${spectators.length} 人</span></div><div class="watcher-list">${spectators.length ? spectators.map((m, i) => `<span>${esc(m.name || '观众 ' + (i + 1))}${m.id === c.id ? ' · 你' : ''}${!m.connected ? ' · 离线' : ''}</span>`).join('') : '<p>棋室已开，静候来客。</p>'}</div></section>
-      <section class="panel online-invite"><div class="section-label">邀请朋友 <b>${r.code}</b></div><p class="fineprint">朋友先连接以下服务，再输入房间号。</p>${(this.hostAddresses.length ? this.hostAddresses : [c.url]).map(address => `<input class="invite-address" aria-label="邀请服务地址" readonly value="${esc(address)}"/>`).join('')}<small>选中地址即可复制；局域网服务仅供同一网络使用。</small></section>
+      <section class="panel online-invite"><div class="section-label">邀请朋友 <b>${r.code}</b></div><p class="fineprint">朋友先连接以下服务，再输入房间号。</p>${(this.hostingCurrentService() && this.hostAddresses.length ? this.hostAddresses : [c.url]).map(address => `<input class="invite-address" aria-label="邀请服务地址" readonly value="${esc(address)}"/>`).join('')}<small>选中地址即可复制；局域网服务仅供同一网络使用。</small></section>
       <p class="rail-note">空房间 10 分钟后清除 · 离开页面计时继续</p></aside></div>`;
   }
   rateMarkup() {
@@ -127,7 +128,7 @@ export class OnlineRoom {
         button.disabled = true;
         try {
           const data = await window.roomsHost.start(); if (!data.ok) throw new Error(data.error);
-          this.hostAddresses = data.addresses;
+          this.hostAddresses = data.addresses; this.hostLocal = data.local;
           await this.client.connect(data.local); this.h.render();
           if (!data.addresses.length) this.h.toast('服务已开启，但未找到局域网地址；请先连接 Wi-Fi 或网线。');
         } finally { button.disabled = false; }
