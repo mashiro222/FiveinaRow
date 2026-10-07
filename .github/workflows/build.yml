@@ -47,6 +47,11 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build pinned Rapfi with pretrained NNUE models
+        run: pnpm build:engine --arch=${{ matrix.arch }}
+      - name: Native neural engine tests
+        if: matrix.platform == 'win' || matrix.arch == 'arm64'
+        run: pnpm test:native
       - name: Native desktop UI tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:ui
@@ -81,7 +86,11 @@ jobs:
           files: installers/*
           generate_release_notes: true
           body: |
-            弈间 · 完全离线的五子棋桌面游戏。
+            弈间 v1.1.0 · Rapfi 神经网络引擎升级。
+
+            移除旧版四档 AI，接入 Rapfi 官方预训练 Mix9SVQ NNUE 模型。完全离线、全力搜索，支持每手 10 / 30 / 60 秒思考预算。提示和开局练习共用新引擎。旧战绩保留，与 Rapfi 胜率分开统计。
+
+            自由规则支持 13 / 15 / 19 路；Rapfi 禁手模型使用 15 路棋盘。引擎 GPL 源码和许可随安装包提供。
 
             - mac-arm64：Apple Silicon Mac（M 系列芯片）
             - mac-x64：Intel Mac

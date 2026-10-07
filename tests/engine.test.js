@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createBoard,inspectMove,fours,coordinate,availableMoves} from '../src/engine.js';
-import {chooseMove,LEVELS} from '../src/ai.js';
+import {chooseMove,LEVELS} from './fixtures/legacy-ai.js';
 import {newGame,play,undo,boardOf,recordResult,summarize,load,save,DEFAULTS} from '../src/state.js';
 import {OPENINGS} from '../src/openings.js';
 const idx=(x,y,s=15)=>y*s+x;
@@ -47,5 +47,23 @@ test('undo human/AI pair, undo while thinking, and preserve AI first move',()=>{
  const white=newGame({...DEFAULTS,human:2});play(white,112);assert.equal(undo(white),false);[113,97].forEach(i=>play(white,i));undo(white);assert.deepEqual(white.moves,[112]);
 });
 test('local mode undo removes one move; practice excluded from win rates; local excluded from history',()=>{const g=newGame({...DEFAULTS,mode:'local'});play(g,112);play(g,113);undo(g);assert.deepEqual(g.moves,[112]);g.result={winner:1};assert.deepEqual(recordResult([],g),[]);const h=newGame(DEFAULTS,[],true);h.result={winner:1};const r=recordResult([],h);assert.equal(r.length,1);assert.equal(summarize(r).total,0);});
-test('per-level stats include draws in denominator',()=>{const records=[{level:'beginner',result:'win'},{level:'beginner',result:'draw'},{level:'strong',result:'loss'},{level:'beginner',result:'loss',assisted:true}];assert.equal(summarize(records,'beginner').rate,50);assert.equal(summarize(records).total,3);});
+test('per-level stats include draws in denominator',()=>{const records=[{level:'beginner',result:'win'},{level:'beginner',result:'draw'},{level:'strong',result:'loss'},{level:'beginner',result:'loss',assisted:true}];assert.equal(summarize(records,'beginner').rate,50);assert.equal(summarize(records,null).total,3);assert.equal(summarize(records).total,0);});
 test('saved settings, unfinished game and results restore; malformed data recovers',()=>{let value=null;const storage={getItem:()=>value,setItem:(_k,v)=>value=v};const g=newGame(DEFAULTS);play(g,112);assert.equal(save(storage,DEFAULTS,g,[]),true);const restored=load(storage);assert.deepEqual(restored.game,g);assert.deepEqual(boardOf(restored.game),boardOf(g));value='garbage';assert.equal(load(storage),null);value=JSON.stringify({version:1,settings:{size:2}});assert.equal(load(storage),null);});
+test('v1.0 saves retain history and migrate unfinished old AI games into practice',()=>{
+ const settings={...DEFAULTS,level:'expert'};delete settings.engineId;delete settings.thinkMs;
+ const game=newGame(settings,[112,113]);
+ const records=[{id:'old',at:1,level:'expert',result:'win',moves:[112],assisted:false}];
+ const restored=load({getItem:()=>JSON.stringify({version:1,settings,game,records})});
+ assert.deepEqual(restored.records,records);assert.equal(summarize(restored.records).total,0);
+ assert.equal(restored.settings.level,'rapfi');assert.equal(restored.settings.thinkMs,10000);
+ assert.deepEqual(restored.game.moves,game.moves);assert.equal(restored.game.migrated,true);assert.equal(restored.game.assisted,true);
+ restored.game.result={winner:1,reason:'测试'};
+ assert.equal(summarize(recordResult(restored.records,restored.game)).total,0);
+});
+test('completed old games keep their opponent identity; new Rapfi records carry model and time budget',()=>{
+ const settings={...DEFAULTS,level:'expert'};const game=newGame(settings,[112]);game.result={winner:2};
+ const restored=load({getItem:()=>JSON.stringify({version:1,settings,game,records:[]})});
+ assert.equal(restored.game.settings.level,'expert');assert.equal(restored.game.assisted,false);
+ const fresh=newGame({...DEFAULTS,thinkMs:60000});fresh.result={winner:1};
+ const records=recordResult([],fresh);assert.equal(records[0].engineId,DEFAULTS.engineId);assert.equal(records[0].thinkMs,60000);assert.equal(summarize(records).wins,1);
+});

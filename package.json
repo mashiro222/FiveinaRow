@@ -1,6 +1,6 @@
 {
   "name": "five-in-a-row",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "弈间 · 离线五子棋与开局研习",
   "type": "module",
   "main": "electron/main.cjs",
@@ -13,7 +13,10 @@
     "test:ui": "node tests/ui.mjs",
     "pack": "electron-builder --dir",
     "dist:mac": "electron-builder --mac --publish never",
-    "dist:win": "electron-builder --win --publish never"
+    "dist:win": "electron-builder --win --publish never",
+    "build:engine": "node scripts/build-engine.mjs",
+    "test:native": "node scripts/test-native.mjs",
+    "benchmark:ai": "node scripts/benchmark-ai.mjs"
   },
   "devDependencies": {
     "electron": "^42.0.0",
@@ -42,7 +45,10 @@
       "identity": "-",
       "icon": "assets/icon.png",
       "hardenedRuntime": false,
-      "notarize": false
+      "notarize": false,
+      "binaries": [
+        "Contents/Resources/rapfi/pbrain-rapfi"
+      ]
     },
     "win": {
       "target": [
@@ -60,6 +66,34 @@
     "artifactName": "Five-in-a-Row-${version}-${os}-${arch}.${ext}",
     "portable": {
       "artifactName": "Five-in-a-Row-${version}-win-${arch}-Portable.${ext}"
-    }
+    },
+    "beforePack": "scripts/before-pack.cjs",
+    "extraResources": [
+      {
+        "from": "native/rapfi",
+        "to": "rapfi"
+      },
+      {
+        "from": "third_party/rapfi",
+        "to": "licenses/rapfi",
+        "filter": [
+          "**/*",
+          "!networks/**/*",
+          "!rapfi-model210901.bin"
+        ]
+      },
+      {
+        "from": "scripts/build-engine.mjs",
+        "to": "licenses/rapfi/build-engine.mjs"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "licenses/THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "LICENSE",
+        "to": "licenses/APP-LICENSE.txt"
+      }
+    ]
   }
 }
