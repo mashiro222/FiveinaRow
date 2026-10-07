@@ -77,6 +77,8 @@ class RapfiEngine {
     if (/^ERROR\b|Evaluator .* disabled|Failed to load from|failed to initialized/i.test(line)) return this.fail(Object.assign(new Error('Rapfi 神经网络加载或计算失败，请重新安装或重试。'), {engineDetail: line}));
     const pending = this.pending;
     if (!pending) return;
+    (pending.trace ||= []).push(line);
+    if (pending.trace.length > 30) pending.trace.shift();
     if (pending.waiting && /^name="Rapfi",/.test(line)) {
       pending.waiting = false;
       clearInterval(pending.readyTimer);
@@ -120,7 +122,9 @@ class RapfiEngine {
     return new Promise((resolve, reject) => {
       const pending = { position, resolve, reject, started: Date.now(), lastProgress: 0, waiting: true, stats: {depth:0,nodes:0,searchMs:0} };
       this.pending = pending;
-      pending.timer = setTimeout(() => this.fail(new Error('Rapfi 响应超时，请点击重试。')), position.thinkMs + 15000);
+      pending.timer = setTimeout(() => this.fail(Object.assign(new Error('Rapfi 响应超时，请点击重试。'), {
+        engineDetail: { phase: pending.waiting ? 'readiness' : 'search', moves: position.moves, stats: pending.stats, output: pending.trace || [] }
+      })), position.thinkMs + 15000);
       const commands = [];
       const key = `${position.size}:${position.forbidden}`;
       if (key !== this.boardKey) {
