@@ -1,6 +1,6 @@
 {
   "name": "five-in-a-row",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "弈间 · 五子棋、人机对弈、好友联机与开局研习",
   "type": "module",
   "main": "electron/main.cjs",
@@ -18,7 +18,8 @@
     "test:native": "node scripts/test-native.mjs",
     "benchmark:ai": "node scripts/benchmark-ai.mjs",
     "server": "node server/index.mjs",
-    "test:online": "node tests/online-ui.mjs"
+    "test:online": "node tests/online-ui.mjs",
+    "test:public": "node tests/public-online-ui.mjs"
   },
   "devDependencies": {
     "electron": "^42.0.0",

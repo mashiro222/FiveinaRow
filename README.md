@@ -16,7 +16,7 @@
 
 所有棋盘、字体回退、音效、AI 与棋谱均在应用内；离线模式无需网络，所有模式均无需账号。
 
-**v1.2.2 好友联机**：同一 Wi-Fi 下，一人在「联机房间」开启局域网服务，朋友连接显示的地址，再输入四位房间号。跨网络需要部署公共房间服务；此版本未内置已上线的公共服务。详见 [联机与部署说明](docs/ONLINE.md)。
+**v1.2.3 公共棋室**：已内置免费的公网房间服务。打开「联机房间」，一人创建房间，朋友输入四位房号即可异地对弈或旁观；旧版保存过局域网地址的玩家可点击「使用公共棋室」。免费服务休眠后首次连接可能需要约一分钟，游戏会自动等待和重试；平台重启会清空房间。同一 Wi-Fi 下仍可开启局域网服务。详见 [联机与部署说明](docs/ONLINE.md)。
 
 ## 功能
 
@@ -67,6 +67,7 @@ pnpm test:native   # 真实 NNUE 加载、强制攻防、禁手、取消请求�
 pnpm benchmark:ai  # 新旧引擎交换黑白对战，输出 reports/ai-match.json
 pnpm test:ui       # 真正启动 Electron 窗口的端到端测试；需桌面环境
 pnpm test:online   # 两名棋手、一名观众的桌面端联机测试及局域网服务入口
+pnpm test:public   # 三个桌面客户端连接真实公共服务（需联网，手动部署验收）
 pnpm server        # 独立房间服务（默认端口 8787）
 pnpm dist:mac      # 在 Mac 上生成 .dmg / .zip
 pnpm dist:win      # 建议在 Windows 上生成 NSIS 安装版和便携版
@@ -77,8 +78,8 @@ pnpm dist:win      # 建议在 Windows 上生成 NSIS 安装版和便携版
 GitHub Actions 对提交运行测试，分别生成 macOS ARM64、macOS x64 与 Windows x64 下载产物。推送 `v*` 标签后，在所有构建成功时自动创建 GitHub Release 并上传安装包。Mac 包带本地 ad-hoc 签名以保证包内完整性，但没有开发者证书与 Apple 公证；Windows 包未做正式代码签名。
 
 ```sh
-git tag v1.2.2
-git push origin v1.2.2
+git tag v1.2.3
+git push origin v1.2.3
 ```
 
 ## 项目结构

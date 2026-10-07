@@ -1,4 +1,4 @@
-export const DEFAULT_ROOM_SERVER = ''; // Set to a deployed wss://…/room URL for a shared public lobby.
+export const DEFAULT_ROOM_SERVER = 'wss://five-in-a-row-rooms.onrender.com/room';
 export function normalizeServer(value) {
   const url = new URL(value.trim());
   if (!['ws:', 'wss:'].includes(url.protocol) || url.username || url.password || url.hash || url.search) throw new Error('请输入 ws:// 或 wss:// 房间服务地址');

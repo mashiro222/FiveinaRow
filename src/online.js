@@ -1,4 +1,4 @@
-import { OnlineClient } from './online-client.js';
+import { OnlineClient, DEFAULT_ROOM_SERVER } from './online-client.js';
 const stored = (key, fallback) => { try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; } };
 const store = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 
@@ -67,9 +67,9 @@ export class OnlineRoom {
     const { esc, icon, title } = this.h, c = this.client, r = c.room;
     const connecting = ['connecting', 'waking', 'disconnected'].includes(c.status);
     if (!r) return `${title('PLAY TOGETHER', '远近之间，共下一局。', '用四位房间号相约，入座对弈，也可以静静旁观。')}
-      <section class="panel online-connection"><div><span class="eyebrow">连接棋室</span><h2>先连接同一个房间服务</h2><p>同一 Wi-Fi 下，一人开启局域网服务，再把地址发给朋友。跨网络使用公共服务地址。</p></div>
+      <section class="panel online-connection"><div><span class="eyebrow">连接棋室</span><h2>${c.url === DEFAULT_ROOM_SERVER ? '棋室已备，邀友入局。' : '连接你们的棋室'}</h2><p>${c.url === DEFAULT_ROOM_SERVER ? '直接创建房间，或输入朋友的四位房号。首次连接可能需要约一分钟，请稍候。' : '双方使用同一个地址；也可以切回公共棋室，直接用房号相约。'}</p></div>
       <form id="online-connect-form"><label class="field">房间服务地址<input name="server" id="online-server" type="text" value="${esc(c.url)}" placeholder="wss://你的房间服务/room" required spellcheck="false" autocomplete="off"/></label><button class="secondary" type="submit" ${connecting ? 'disabled' : ''}>${connecting ? '连接中…' : '连接服务'}</button></form>
-      <div class="online-connect-bottom"><span class="connection-dot ${c.status === 'connected' ? 'connected' : ''}"></span><span id="online-connection-status">${this.statusText()}</span>${connecting ? '<button class="small-link" data-online="cancel-connect">取消连接</button>' : ''}${window.roomsHost ? '<button class="small-link" data-online="host">开启局域网服务 →</button>' : ''}</div>
+      <div class="online-connect-bottom"><span class="connection-dot ${c.status === 'connected' ? 'connected' : ''}"></span><span id="online-connection-status">${this.statusText()}</span>${connecting ? '<button class="small-link" data-online="cancel-connect">取消连接</button>' : ''}${c.url !== DEFAULT_ROOM_SERVER ? '<button class="small-link" data-online="default-service">使用公共棋室</button>' : ''}${window.roomsHost ? '<button class="small-link" data-online="host">开启局域网服务 →</button>' : ''}</div>
       ${this.hostingCurrentService() && this.hostAddresses.length ? `<div class="share-address"><b>朋友在同一 Wi-Fi 下填写这个地址</b>${this.hostAddresses.map(a => `<code>${esc(a)}</code>`).join('')}<small>保持此电脑和游戏运行；系统询问时允许局域网访问。</small></div>` : ''}</section>
       <div class="online-lobby"><section class="panel online-lobby-card"><span class="online-card-number">01 / 邀请朋友</span><h2>开一间棋室</h2><p>房间号由服务自动分配。进入后选择执黑或执白，双方准备即可开始。</p><button class="primary" data-online="create" ${connecting ? 'disabled' : ''}>${icon('grid')} 创建房间 ${icon('arrow')}</button></section>
       <section class="panel online-lobby-card"><span class="online-card-number">02 / 赴一场棋约</span><h2>输入房间号</h2><p>进入时默认旁观，有空位即可取名入座。</p><form id="online-join-form"><input name="code" aria-label="四位房间号" class="room-code-input" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" placeholder="0000" required autocomplete="off"/><button class="primary" type="submit" ${connecting ? 'disabled' : ''}>进入房间 ${icon('arrow')}</button></form></section></div>
@@ -92,7 +92,7 @@ export class OnlineRoom {
       </section><aside class="game-rail"><section class="panel online-rate"><div class="section-label">Rapfi · 局势胜率<label class="rate-toggle"><input type="checkbox" id="online-show-rate" ${this.showRate ? 'checked' : ''}/>显示</label></div><div id="online-rate-body">${this.rateMarkup()}</div></section>
       <section class="panel online-rules"><div class="section-label">本局规则 <span>${owner ? '房主设置' : '由房主设置'}</span></div><form id="online-rules-form"><label class="rule-switch"><div><b>黑棋禁手</b><small>禁止三三、四四、长连</small></div><input type="checkbox" name="forbidden" ${r.settings.forbidden ? 'checked' : ''} ${!owner || playing || !connected ? 'disabled' : ''}/></label><label class="field">每手限时<select name="turnSeconds" ${!owner || playing || !connected ? 'disabled' : ''}>${[[30,'30 秒'],[60,'60 秒'],[120,'2 分钟']].map(([v,l])=>`<option value="${v}" ${r.settings.turnSeconds === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>${owner && !playing ? `<button class="secondary wide" type="submit" ${disabled}>保存规则</button>` : ''}</form><p class="fineprint">${playing ? '本局规则已锁定，下一局开始前可修改。' : '修改规则后双方需要重新准备。'} 禁手落点会被拦截，计时继续。超时判负。</p></section>
       <section class="panel online-watchers"><div class="section-label">旁观席 <span>${spectators.length} 人</span></div><div class="watcher-list">${spectators.length ? spectators.map((m, i) => `<span>${esc(m.name || '观众 ' + (i + 1))}${m.id === c.id ? ' · 你' : ''}${!m.connected ? ' · 离线' : ''}</span>`).join('') : '<p>棋室已开，静候来客。</p>'}</div></section>
-      <section class="panel online-invite"><div class="section-label">邀请朋友 <b>${r.code}</b></div><p class="fineprint">朋友先连接以下服务，再输入房间号。</p>${(this.hostingCurrentService() && this.hostAddresses.length ? this.hostAddresses : [c.url]).map(address => `<input class="invite-address" aria-label="邀请服务地址" readonly value="${esc(address)}"/>`).join('')}<small>选中地址即可复制；局域网服务仅供同一网络使用。</small></section>
+      <section class="panel online-invite"><div class="section-label">邀请朋友 <b>${r.code}</b></div><p class="fineprint">${c.url === DEFAULT_ROOM_SERVER ? '朋友打开「联机房间」，输入上面的房间号即可。' : '朋友先连接以下服务，再输入房间号。'}</p>${(this.hostingCurrentService() && this.hostAddresses.length ? this.hostAddresses : [c.url]).map(address => `<input class="invite-address" aria-label="邀请服务地址" readonly value="${esc(address)}"/>`).join('')}<small>选中地址即可复制；局域网服务仅供同一网络使用。</small></section>
       <p class="rail-note">空房间 10 分钟后清除 · 离开页面计时继续</p></aside></div>`;
   }
   rateMarkup() {
@@ -130,7 +130,8 @@ export class OnlineRoom {
     const button = event.target.closest('[data-online]'); if (!button) return;
     event.preventDefault(); const action = button.dataset.online, r = this.client.room;
     this.run(async () => {
-      if (action === 'reconnect') await this.client.connect();
+      if (action === 'default-service') await this.client.connect(DEFAULT_ROOM_SERVER);
+      else if (action === 'reconnect') await this.client.connect();
       else if (action === 'cancel-connect') { this.client.stop(); this.h.render(); }
       else if (action === 'host') {
         button.disabled = true;
