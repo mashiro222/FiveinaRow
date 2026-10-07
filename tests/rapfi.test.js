@@ -103,6 +103,22 @@ test('corrupted model fails integrity verification before spawning any engine',a
   await assert.rejects(invalid.analyze(position([112])),/文件损坏/);assert.equal(invalid.child,null);
  } finally {await fs.rm(temp,{recursive:true,force:true});}
 });
+test('native full-strength MultiPV returns distinct legal continuation lines',{skip:!native,timeout:15000},async()=>{
+ const e=new RapfiEngine(directory,{threads:2,hashMB:64,freshSearch:true});
+ try{
+  const moves=[112,97,98];
+  const r=await e.analyze(position(moves,{forbidden:true,strength:100,multiPv:3,thinkMs:1000}));
+  assert.ok(r.neuralLoaded);assert.equal(r.candidates.length,3);
+  assert.equal(new Set(r.candidates.map(c=>c.moves[0])).size,3);
+  assert.equal(new Set(r.candidates.map(c=>c.depth)).size,1);
+  for(const c of r.candidates){
+   assert.ok(c.depth>4&&c.moves.length>=3);
+   const board=createBoard();
+   for(const [ply,i]of [...moves,...c.moves.slice(0,3)].entries()){assert.equal(inspectMove(board,i,ply%2+1,{forbidden:true}).legal,true);board[i]=ply%2+1;}
+  }
+  await assert.rejects(e.analyze(position(moves,{multiPv:9})),/分支/);
+ }finally{e.close();}
+});
 
 test('strength changes clear full-strength caches, while equal-strength moves reuse the process',async()=>{
  const adapter=new RapfiEngine(directory), writes=[];let starts=0,kills=0;

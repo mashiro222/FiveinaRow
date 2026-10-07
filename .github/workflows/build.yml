@@ -81,6 +81,12 @@ jobs:
       - name: Offline desktop UI tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:ui
+      - name: Opening study UI tests
+        if: matrix.platform == 'win' || matrix.arch == 'arm64'
+        run: pnpm test:study
+      - name: Piece alignment UI tests
+        if: matrix.platform == 'win' || matrix.arch == 'arm64'
+        run: pnpm test:appearance
       - name: Three-client online desktop tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:online
@@ -115,9 +121,11 @@ jobs:
           files: installers/*
           generate_release_notes: true
           body: |
-            弈间 ${{ github.ref_name }} · Rapfi 陪练。
+            弈间 ${{ github.ref_name }} · Rapfi 分支棋谱与棋子对齐修复。
 
-            新增强度可调的 Rapfi 陪练（0–90，默认 20 / 每手 1 秒），采用官方引擎自带的降棋力机制。保留全力 Rapfi；两者战绩分开，陪练可按强度筛选。提示和联机局势分析仍使用全力引擎。新增 0.5 / 1 / 3 秒预算。
+            26 种开局的第 4–6 手改为全力 Rapfi 分析，禁手与自由规则分别计算，提供筛选后的多条六手以内变化。棋盘候选可点击，手顺可逐步查看；接着练习沿用当前规则，并可选陪练或全力 Rapfi。分析是有限搜索结果，不是唯一最优解或必胜证明。
+
+            修复草稿纸 O / X 棋子偏离交叉点：使用居中矢量图形，适配 13 / 15 / 19 路和不同窗口大小；草稿纸棋谱也显示手数。
 
             支持四位房间号、两个取名棋手席位与旁观席。房主设置黑棋禁手及每手 30 秒 / 60 秒 / 2 分钟，双方准备后开局。支持超时判负、断线重连、再来一局和空房间自动清理。
 

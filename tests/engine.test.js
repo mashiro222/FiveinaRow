@@ -36,7 +36,7 @@ test('all difficulty levels take immediate wins and block immediate losses',()=>
 });
 test('AI returns legal moves under forbidden rules',()=>{const b=setup([[6,7],[8,7],[7,6],[7,8]],[[6,6],[8,8],[8,6],[6,8]]);for(const level of Object.keys(LEVELS)){const r=chooseMove(b,1,renju,level,()=>0);assert.equal(inspectMove(b,r.index,1,renju).legal,true);}});
 test('AI returns null on a full board',()=>assert.equal(chooseMove(Array(225).fill(1),2).index,null));
-test('26 opening patterns have unique standard first triples and valid example moves',()=>{
+test('26 opening patterns have unique standard first triples',()=>{
  assert.equal(OPENINGS.length,26);assert.equal(new Set(OPENINGS.map(o=>o.moves.slice(0,3).join(','))).size,26);
  for(const o of OPENINGS){const g=newGame(DEFAULTS);for(const i of o.moves)assert.equal(play(g,i).legal,true,o.name);assert.equal(g.result,null,o.name);}
  const flower=OPENINGS.find(o=>o.name==='花月');assert.deepEqual(flower.moves.slice(0,3),[112,97,98]);const pu=OPENINGS.find(o=>o.name==='浦月');assert.deepEqual(pu.moves.slice(0,3),[112,98,128]);

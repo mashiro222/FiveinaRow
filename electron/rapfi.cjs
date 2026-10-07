@@ -3,15 +3,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
+const { PvCollector } = require('./rapfi-pv.cjs');
 
 const ENGINE_ID = 'rapfi-nnue-3c94c2a-e32ad77';
 function validatePosition(position) {
-  const { id, size, moves, forbidden, thinkMs = 10000, strength = 100 } = position || {};
+  const { id, size, moves, forbidden, thinkMs = 10000, strength = 100, multiPv = 1 } = position || {};
   if (!Number.isSafeInteger(id) || ![13,15,19].includes(size) || !Array.isArray(moves) || moves.length >= size * size || new Set(moves).size !== moves.length || moves.some(i => !Number.isInteger(i) || i < 0 || i >= size * size) || typeof forbidden !== 'boolean') throw new Error('无效的棋盘局面');
   if (forbidden && size !== 15) throw new Error('Rapfi 禁手神经网络支持 15 路棋盘，请新开一局 15 路对局。');
   if (!Number.isInteger(thinkMs) || thinkMs < 100 || thinkMs > 60000) throw new Error('无效的思考时限');
   if (!Number.isInteger(strength) || strength < 0 || strength > 100) throw new Error('无效的 AI 强度');
-  return { id, size, moves: [...moves], forbidden, thinkMs, strength };
+  if (!Number.isInteger(multiPv) || multiPv < 1 || multiPv > 8) throw new Error('无效的候选分支数量');
+  return { id, size, moves: [...moves], forbidden, thinkMs, strength, multiPv };
 }
 function boardCommand({ size, moves }) {
   const self = moves.length % 2;
@@ -79,6 +81,7 @@ class RapfiEngine {
     if (/^ERROR\b|Evaluator .* disabled|Failed to load from|failed to initialized/i.test(line)) return this.fail(Object.assign(new Error('Rapfi 神经网络加载或计算失败，请重新安装或重试。'), {engineDetail: line}));
     const pending = this.pending;
     if (!pending) return;
+    pending.pv?.receive(line);
     (pending.trace ||= []).push(line);
     if (pending.trace.length > 30) pending.trace.shift();
     if (pending.waiting && /^name="Rapfi",/.test(line)) {
@@ -110,7 +113,7 @@ class RapfiEngine {
     if (x >= size || y >= size || moves.includes(index) || !this.nnueConfigured) return this.fail(new Error('Rapfi 返回了无效落点或未启用神经网络。'));
     this.pending = null;
     clearTimeout(pending.timer);
-    pending.resolve({ id, index, engineId: ENGINE_ID, engine: 'Rapfi NNUE', strength: pending.position.strength, neuralLoaded: this.neuralLoaded, threads: this.threads, elapsedMs: Date.now() - pending.started, ...pending.stats });
+    pending.resolve({ id, index, engineId: ENGINE_ID, engine: 'Rapfi NNUE', strength: pending.position.strength, neuralLoaded: this.neuralLoaded, threads: this.threads, elapsedMs: Date.now() - pending.started, ...pending.stats, ...(pending.pv ? {candidates:pending.pv.result()} : {}) });
   }
   analyze(input) {
     let position;
@@ -126,6 +129,7 @@ class RapfiEngine {
     this.strength = position.strength;
     return new Promise((resolve, reject) => {
       const pending = { position, resolve, reject, started: Date.now(), lastProgress: 0, waiting: true, stats: {depth:0,nodes:0,searchMs:0} };
+      if(position.multiPv>1)pending.pv=new PvCollector(position);
       this.pending = pending;
       pending.timer = setTimeout(() => this.fail(Object.assign(new Error('Rapfi 响应超时，请点击重试。'), {
         engineDetail: { phase: pending.waiting ? 'readiness' : 'search', moves: position.moves, stats: pending.stats, output: pending.trace || [] }
@@ -141,7 +145,8 @@ class RapfiEngine {
         this.boardKey = key;
         this.neuralLoaded = false;
       }
-      commands.push(`INFO STRENGTH ${position.strength}`, `INFO TIMEOUT_TURN ${position.thinkMs}`, 'INFO TIMEOUT_MATCH 2147483647', 'INFO TIME_LEFT 2147483647', boardCommand(position));
+      const board = boardCommand(position);
+      commands.push(`INFO STRENGTH ${position.strength}`, `INFO TIMEOUT_TURN ${position.thinkMs}`, 'INFO TIMEOUT_MATCH 2147483647', 'INFO TIME_LEFT 2147483647', position.multiPv>1 ? `${board.replace(/^BOARD/, 'YXBOARD')}\nYXNBEST ${position.multiPv}` : board);
       pending.commands = commands;
       // Rapfi prints its move just before clearing its `thinking` flag. Commands
       // received in that gap are discarded token by token (not line by line).

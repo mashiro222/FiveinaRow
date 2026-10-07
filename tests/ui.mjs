@@ -52,7 +52,7 @@ try{
  await page.waitForTimeout(200);await page.screenshot({path:'test-results/05-paper.png',fullPage:true});
  await page.reload();await page.waitForSelector('[data-cell]');assert.equal(await page.locator('[data-cell].occupied').count(),5);assert.equal(await page.locator('.board-paper').count(),1);
  // Formal AI resignation is saved once across refresh and replay works.
- await page.locator('[data-action="new"]').first().click();await page.selectOption('[name="mode"]','ai');await page.selectOption('[name="human"]','2');await page.selectOption('[name="thinkMs"]','10000');
+ await page.locator('[data-action="new"]').first().click();await page.selectOption('[name="mode"]','ai');await page.selectOption('[name="level"]','rapfi');await page.selectOption('[name="human"]','2');await page.selectOption('[name="thinkMs"]','10000');
  await page.locator('#new-form button[type="submit"]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-cell].occupied').length===1,{},{timeout:15000});
  await page.locator('[data-action="resign"]').click();await page.locator('[data-action="confirm-resign"]').click();
  await page.locator('[data-page="stats"]').first().click();assert.equal(await page.locator('tbody tr').count(),1);
