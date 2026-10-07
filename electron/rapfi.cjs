@@ -90,6 +90,14 @@ class RapfiEngine {
         this.onProgress({ id: pending.position.id, ...pending.stats });
       }
     }
+    const probability = line.match(/^INFO WINRATE (\S+)$/);
+    if (probability) {
+      const value = Number(probability[1]);
+      if (Number.isFinite(value) && value >= 0 && value <= 1) {
+        pending.stats.blackWinRate = pending.position.moves.length % 2 === 0 ? value : 1 - value;
+        this.onProgress({ id: pending.position.id, ...pending.stats });
+      }
+    }
     const move = line.match(/^(\d+),(\d+)$/);
     if (!move) return;
     const x = Number(move[1]), y = Number(move[2]), { size, moves, id } = pending.position;

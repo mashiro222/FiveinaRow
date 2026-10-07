@@ -2,6 +2,7 @@ import { BLACK, coordinate, inspectMove, availableMoves } from './engine.js';
 import { ENGINE, THINK_TIMES, opponentName } from './ai.js';
 import { DEFAULTS, newGame, boardOf, play, undo, recordResult, summarize, load, save } from './state.js';
 import { OPENINGS, STEP_NOTES, LESSONS } from './openings.js';
+import { OnlineRoom } from './online.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -42,7 +43,7 @@ function sound() {
 }
 function cancelAI() { window.rapfi?.cancel(request); request++; busy=false; progress=null; }
 function scheduleAI() {
-  if (game.result || game.settings.mode !== 'ai' || game.moves.length % 2 + 1 === game.settings.human || busy) return;
+  if (page !== 'play' || game.result || game.settings.mode !== 'ai' || game.moves.length % 2 + 1 === game.settings.human || busy) return;
   compute('move');
 }
 window.rapfi?.onProgress(data => {
@@ -83,7 +84,8 @@ function place(index,fromAI=false) {
   render();if(keepFocus)$(`[data-cell="${index}"]`)?.focus({preventScroll:true});scheduleAI();
 }
 function stone(color,extra='') {return `<span class="stone-dot ${color===1?'black':'white'} ${extra}"></span>`;}
-function boardMarkup(moves,size,{interactive=true,small=false,result=null}={}) {
+function boardMarkup(moves,size,{interactive=true,small=false,result=null,online=false,locked=false,cursor=112}={}) {
+  const boardHint=online?null:hint,boardCursor=online?cursor:keyboardCell;
   const board=Array(size*size).fill(0);moves.forEach((v,i)=>board[v]=i%2+1);
   const inset=6,unit=88/(size-1),pos=i=>inset+i*unit;
   let grid='';for(let i=0;i<size;i++)grid+=`<line x1="${pos(i)}" y1="6" x2="${pos(i)}" y2="94"/><line x1="6" y1="${pos(i)}" x2="94" y2="${pos(i)}"/>`;
@@ -92,12 +94,12 @@ function boardMarkup(moves,size,{interactive=true,small=false,result=null}={}) {
   let labels='';if(!small) for(let i=0;i<size;i++)labels+=`<text x="${pos(i)}" y="2.8">${'ABCDEFGHJKLMNOPQRST'[i]}</text><text x="2.5" y="${pos(i)+.55}">${size-i}</text>`;
   const cells=board.map((color,i)=>{
     const moveNumber=moves.indexOf(i)+1,last=i===moves.at(-1),win=result?.line?.includes(i);
-    return `<button type="button" class="intersection ${color?'occupied color-'+color:''} ${last?'last':''} ${win?'winning':''} ${interactive&&hint===i?'hint':''}" style="left:${pos(i%size)}%;top:${pos(Math.floor(i/size))}%;width:${unit*.88}%;height:${unit*.88}%" ${interactive?`data-cell="${i}" tabindex="${i===keyboardCell?0:-1}"`:'tabindex="-1" disabled'} aria-label="${coordinate(i,size)}${color?'，'+(color===1?'黑':'白')+'棋，第'+moveNumber+'手':'，空位'}">${color?`<span class="piece">${settings.pieces==='ink'?color===1?'×':'○':(settings.numbers||!interactive)?moveNumber:''}</span>${last?'<span class="last-mark"></span>':''}`:interactive&&hint===i?'<span class="hint-ring"></span>':''}</button>`;
+    return `<button type="button" class="intersection ${color?'occupied color-'+color:''} ${last?'last':''} ${win?'winning':''} ${interactive&&boardHint===i?'hint':''}" style="left:${pos(i%size)}%;top:${pos(Math.floor(i/size))}%;width:${unit*.88}%;height:${unit*.88}%" ${interactive?`${online?'data-online-cell':'data-cell'}="${i}" tabindex="${i===boardCursor?0:-1}"`:'tabindex="-1" disabled'} aria-label="${coordinate(i,size)}${color?'，'+(color===1?'黑':'白')+'棋，第'+moveNumber+'手':'，空位'}">${color?`<span class="piece">${settings.pieces==='ink'?color===1?'×':'○':(settings.numbers||!interactive)?moveNumber:''}</span>${last?'<span class="last-mark"></span>':''}`:interactive&&boardHint===i?'<span class="hint-ring"></span>':''}</button>`;
   }).join('');
-  return `<div class="board-shell ${small?'mini':''}"><div class="board board-${settings.board} pieces-${settings.pieces} turn-${moves.length%2+1} ${!interactive||busy||result?'locked':''}" data-board-size="${size}" role="group" aria-label="${size}乘${size}五子棋棋盘"><svg class="board-grid" viewBox="0 0 100 100" aria-hidden="true"><g class="grid-lines">${grid}</g><g class="stars">${stars}</g><g class="coordinates">${labels}</g></svg>${cells}</div></div>`;
+  return `<div class="board-shell ${small?'mini':''}"><div class="board board-${settings.board} pieces-${settings.pieces} turn-${moves.length%2+1} ${!interactive||(online?locked:busy)||result?'locked':''}" data-board-size="${size}" role="group" aria-label="${size}乘${size}五子棋棋盘"><svg class="board-grid" viewBox="0 0 100 100" aria-hidden="true"><g class="grid-lines">${grid}</g><g class="stars">${stars}</g><g class="coordinates">${labels}</g></svg>${cells}</div></div>`;
 }
-function nav() {return `<aside class="sidebar"><a class="brand" href="#" data-action="nav" data-page="play"><img src="assets/favicon.svg" alt=""/><div>弈间<span>FIVE IN A ROW</span></div></a><div class="nav-caption">一方棋盘，万般可能</div><nav aria-label="主导航">${[['play','grid','对弈','落子，见天地'],['learn','book','棋谱研习','从一手，到全局'],['stats','chart','我的战绩','看见每一步成长'],['appearance','palette','棋室装扮','布置你的方寸之间']].map(([id,ic,name,sub])=>`<button data-action="nav" data-page="${id}" class="nav-item ${page===id?'active':''}" ${page===id?'aria-current="page"':''}>${icon(ic)}<span>${name}<small>${sub}</small></span>${page===id?'<i></i>':''}</button>`).join('')}</nav><div class="sidebar-bottom"><div class="zen-mark">五</div><p>落子无言<br/>自有回响。</p><div class="offline-label"><span></span> 离线棋室 <b>v1.1.0</b></div></div></aside>`;}
-function topbar() {return `<header class="topbar"><div class="breadcrumb">我的棋室 <span>/</span> ${ {play:'自由对弈',learn:'棋谱研习',stats:'我的战绩',appearance:'棋室装扮'}[page]}</div><div class="top-actions"><span class="local-badge"><i></i> 所有对局 · 本地保存</span><button class="icon-button" data-action="sound" title="${settings.sound?'关闭':'开启'}落子音效" aria-label="${settings.sound?'关闭':'开启'}落子音效">${icon(settings.sound?'volume':'mute')}</button><div class="avatar">弈</div></div></header>`;}
+function nav() {return `<aside class="sidebar"><a class="brand" href="#" data-action="nav" data-page="play"><img src="assets/favicon.svg" alt=""/><div>弈间<span>FIVE IN A ROW</span></div></a><div class="nav-caption">一方棋盘，万般可能</div><nav aria-label="主导航">${[['play','grid','对弈','落子，见天地'],['online','grid','联机房间','与远方，共下一局'],['learn','book','棋谱研习','从一手，到全局'],['stats','chart','我的战绩','看见每一步成长'],['appearance','palette','棋室装扮','布置你的方寸之间']].map(([id,ic,name,sub])=>`<button data-action="nav" data-page="${id}" class="nav-item ${page===id?'active':''}" ${page===id?'aria-current="page"':''}>${icon(ic)}<span>${name}<small>${sub}</small></span>${page===id?'<i></i>':''}</button>`).join('')}</nav><div class="sidebar-bottom"><div class="zen-mark">五</div><p>落子无言<br/>自有回响。</p><div class="offline-label"><span></span> 弈间棋室 <b>v1.2.0</b></div></div></aside>`;}
+function topbar() {return `<header class="topbar"><div class="breadcrumb">我的棋室 <span>/</span> ${ {play:'自由对弈',online:'联机房间',learn:'棋谱研习',stats:'我的战绩',appearance:'棋室装扮'}[page]}</div><div class="top-actions"><span class="local-badge"><i></i> ${page==='online'?'好友同局 · 实时同步':'离线对局 · 本地保存'}</span><button class="icon-button" data-action="sound" title="${settings.sound?'关闭':'开启'}落子音效" aria-label="${settings.sound?'关闭':'开启'}落子音效">${icon(settings.sound?'volume':'mute')}</button><div class="avatar">弈</div></div></header>`;}
 function title(eyebrow,heading,desc,action='') {return `<div class="page-heading"><div><div class="eyebrow">${eyebrow}</div><h1>${heading}</h1><p>${desc}</p></div>${action}</div>`;}
 function currentName(color) {return game.settings.mode==='local'?`${color===1?'黑':'白'}方棋手`:color===game.settings.human?'你':opponentName(game.settings.level);}
 function playPage() {
@@ -129,7 +131,7 @@ const presets=[{id:'wood',name:'松间',sub:'温润木纹 · 经典黑白',board
 function appearancePage() {return `${title('MAKE ROOM FOR PLAY','你的棋室，你的心境。','换一方棋盘，换一种落子的心情。所有设置即时生效。')}<div class="theme-grid">${presets.map(p=>`<button class="theme-card ${settings.board===p.board&&settings.background===p.background&&settings.pieces===p.pieces?'selected':''}" data-action="preset" data-preset="${p.id}"><div class="theme-preview preview-${p.id}"><div class="sample-grid"></div><span class="sample-piece p1">${p.id==='paper'?'×':''}</span><span class="sample-piece p2">${p.id==='paper'?'○':''}</span><span class="sample-piece p3">${p.id==='paper'?'×':''}</span><span class="theme-check">${icon('check')}</span></div><div class="theme-description"><b>${p.name}</b><span>${p.sub}</span></div></button>`).join('')}</div><div class="customization-layout"><section class="panel customize"><div class="section-label">自由搭配 ${icon('palette')}</div><label>棋盘材质<select data-setting="board">${[['wood','温润木纹'],['paper','方格草稿纸'],['slate','深色石板'],['jade','浅青竹影']].map(([v,l])=>`<option value="${v}" ${settings.board===v?'selected':''}>${l}</option>`).join('')}</select></label><label>棋室背景<select data-setting="background">${[['ivory','暖白'],['paper','纸白'],['night','深夜'],['sage','鼠尾草绿']].map(([v,l])=>`<option value="${v}" ${settings.background===v?'selected':''}>${l}</option>`).join('')}</select></label><label>棋子样式<select data-setting="pieces">${[['classic','经典黑白'],['ink','手写 O / X'],['glass','琉璃质感'],['flat','极简平面']].map(([v,l])=>`<option value="${v}" ${settings.pieces===v?'selected':''}>${l}</option>`).join('')}</select></label><label>落子音效<input type="checkbox" data-setting="sound" ${settings.sound?'checked':''}/></label><label>显示手数<input type="checkbox" data-setting="numbers" ${settings.numbers?'checked':''}/></label><p class="fineprint">手写棋子以 × 表示黑棋、○ 表示白棋。棋盘路数在“开始新对局”中设置。</p></section><section class="panel live-preview"><div class="section-label">即刻预览 <span>心境不同，棋趣相同</span></div>${boardMarkup([112,113,97,128,98,127,82],15,{interactive:false})}</section></div>`;}
 function render() {
   document.documentElement.dataset.background=settings.background;
-  $('#app').innerHTML=`${nav()}<div class="main">${topbar()}<main>${page==='play'?playPage():page==='learn'?learnPage():page==='stats'?statsPage():appearancePage()}<footer><span>弈间 <i>·</i> FIVE IN A ROW</span><span>专注眼前这一手。</span></footer></main></div>`;
+  $('#app').innerHTML=`${nav()}<div class="main">${topbar()}<main>${page==='online'?online.page():page==='play'?playPage():page==='learn'?learnPage():page==='stats'?statsPage():appearancePage()}<footer><span>弈间 <i>·</i> FIVE IN A ROW</span><span>专注眼前这一手。</span></footer></main></div>`;
 }
 function showModal(html) {const m=$('#modal');m.innerHTML=html;if(!m.open)m.showModal();}
 function closeModal() {$('#modal').close();replay=null;}
@@ -140,7 +142,7 @@ function newDialog() {
 }
 function updateFormMode(){const form=$('#new-form');if(!form)return;const local=form.elements.mode.value==='local';form.elements.thinkMs.disabled=local;form.elements.human.disabled=local;const renju=!local&&form.elements.forbidden.checked;for(const option of form.elements.size.options)option.disabled=renju&&option.value!=='15';if(renju)form.elements.size.value='15';}
 function confirmDialog(title,text,action) {showModal(`<div class="modal-header"><h2>${title}</h2><button class="icon-button" data-action="close" aria-label="关闭">${icon('x')}</button></div><p class="modal-copy">${text}</p><div class="modal-actions"><button class="secondary" data-action="close">继续当前对局</button><button class="primary" data-action="${action}">确认</button></div>`);}
-function launch(s,moves=[],practice=false) {$('#toast').classList.remove('visible');clearTimeout(toastTimer);cancelAI();settings={...settings,...s,level:'rapfi',engineId:ENGINE.id};game=newGame(settings,moves,practice);hint=null;keyboardCell=Math.floor(settings.size**2/2);page='play';persist();closeModal();render();scheduleAI();}
+function launch(s,moves=[],practice=false) {$('#toast').classList.remove('visible');clearTimeout(toastTimer);cancelAI();settings={...settings,...s,level:'rapfi',engineId:ENGINE.id};game=newGame(settings,moves,practice);hint=null;keyboardCell=Math.floor(settings.size**2/2);page='play';online.enter(false);persist();closeModal();render();scheduleAI();}
 function startPractice() {launch({size:15,mode:'ai',human:studySide==='black'?1:2,level:'rapfi',engineId:ENGINE.id,thinkMs:ENGINE.thinkMs,forbidden:false},opening.moves.slice(0,step),true);}
 function replayDialog(){if(!replay)return;showModal(`<div class="modal-header"><div><span class="eyebrow">GAME REVIEW</span><h2>重看这一局</h2></div><button class="icon-button" data-action="close" aria-label="关闭">${icon('x')}</button></div>${boardMarkup((replay.moves||[]).slice(0,replayStep),replay.size||15,{interactive:false})}<div class="step-controls"><button class="icon-button" data-action="replay-step" data-delta="-1" ${replayStep===0?'disabled':''} aria-label="复盘上一步">${icon('undo')}</button><input id="replay-range" type="range" min="0" max="${replay.moves?.length||0}" value="${replayStep}" aria-label="复盘步数"/><span>${replayStep} / ${replay.moves?.length||0}</span><button class="icon-button" data-action="replay-step" data-delta="1" ${replayStep===replay.moves?.length?'disabled':''} aria-label="复盘下一步">${icon('arrow')}</button></div><p class="fineprint">${opponentName(replay.level)} · ${replay.forbidden?'有禁手':'自由规则'} · ${esc(replay.reason||'对局结束')}</p>`);}
 
@@ -148,7 +150,7 @@ document.addEventListener('click',e=>{
   const cell=e.target.closest('[data-cell]');if(cell){place(Number(cell.dataset.cell));return;}
   const button=e.target.closest('[data-action]');if(!button)return;e.preventDefault();
   const {action}=button.dataset;
-  if(action==='nav'){$('#toast').classList.remove('visible');clearTimeout(toastTimer);page=button.dataset.page;render();window.scrollTo(0,0);}
+  if(action==='nav'){$('#toast').classList.remove('visible');clearTimeout(toastTimer);page=button.dataset.page;if(page==='online')cancelAI();online.enter(page==='online');render();if(page==='play')scheduleAI();window.scrollTo(0,0);}
   if(action==='new')newDialog();
   if(action==='close')closeModal();
   if(action==='again')launch({...game.settings,board:settings.board,background:settings.background,pieces:settings.pieces,numbers:settings.numbers,sound:settings.sound});
@@ -190,6 +192,7 @@ document.addEventListener('keydown',e=>{
   if(next!==undefined){e.preventDefault();keyboardCell=next;cell.tabIndex=-1;const target=$(`[data-cell="${next}"]`);target.tabIndex=0;target.focus();}
 });
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeModal();}});
+const online = new OnlineRoom({esc,icon,title,boardMarkup,toast,render,showModal,closeModal,sound,numbers:()=>settings.numbers});
 render();scheduleAI();
 
 if(game.migrated)toast('当前旧版 AI 对局已切换为 Rapfi 练习局；旧战绩已保留。');

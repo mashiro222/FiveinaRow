@@ -36,6 +36,17 @@ test('commands wait for readiness when a move was printed before search cleanup 
   assert.equal(writes.length,4);assert.match(writes[3],/INFO RULE 0\nSTART 15/);
  }finally{guarded.close();}
 });
+test('Rapfi WINRATE is converted from side-to-move into black probability, including streamed updates', async () => {
+ for (const moves of [[112], [112,113]]) {
+  const updates=[], adapter=new RapfiEngine(directory,{onProgress:p=>updates.push(p)});
+  adapter.start=()=>{adapter.child={stdin:{write(text){queueMicrotask(()=>{
+   if(text==='ABOUT\n')adapter.receive('name="Rapfi", version="test"');
+   else {adapter.receive('MESSAGE Evaluator set to mix9svq');adapter.receive('INFO WINRATE 0.8');adapter.receive('INFO WINRATE NaN');adapter.receive('INFO WINRATE 200');adapter.receive('6,7');}
+  });}},kill(){},killed:false};};
+  try {const result=await adapter.analyze(position(moves));assert.ok(Math.abs(result.blackWinRate-(moves.length%2?.2:.8))<1e-9);assert.equal(updates.length,1);assert.equal(updates[0].blackWinRate,result.blackWinRate);}
+  finally{adapter.close();}
+ }
+});
 test('native Rapfi loads pretrained networks for every supported size and both Renju colors',{skip:!native,timeout:30000},async()=>{
  for(const [size,forbidden,moves] of [[13,false,[84]],[15,false,[112]],[19,false,[180]],[15,true,[112]],[15,true,[112,113]]]){
   const r=await engine.analyze(position(moves,{size,forbidden}));
@@ -43,6 +54,7 @@ test('native Rapfi loads pretrained networks for every supported size and both R
   const board=createBoard(size);moves.forEach((i,ply)=>board[i]=ply%2+1);
   assert.equal(inspectMove(board,r.index,moves.length%2+1,{size,forbidden}).legal,true);
   assert.ok(r.depth>4,'Search must actually run beyond the previous shallow search');
+  assert.ok(Number.isFinite(r.blackWinRate) && r.blackWinRate >= 0 && r.blackWinRate <= 1, 'Native engine must emit a valid probability');
  }
 });
 test('native Rapfi takes an immediate win and prevents a forced loss',{skip:!native,timeout:15000},async()=>{

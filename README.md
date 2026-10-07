@@ -1,6 +1,6 @@
 # 弈间 · Five in a Row
 
-一方棋盘，万般可能。一个完全离线、中文界面的五子棋桌面游戏，支持 macOS 与 Windows。
+一方棋盘，万般可能。一个中文界面的五子棋桌面游戏，支持离线游玩与好友联机，适用于 macOS 与 Windows。
 
 ![弈间主界面](assets/screenshot.png)
 
@@ -14,11 +14,15 @@
 
 当前版本未购买开发者签名证书，也未做 Apple 公证。macOS 首次运行若被 Gatekeeper 拦截，请在尝试打开后，进入「系统设置 → 隐私与安全性 → 仍要打开」。Windows 可能显示 SmartScreen 提示。不要关闭系统的全局安全保护。
 
-所有棋盘、字体回退、音效、AI 与棋谱均在应用内；游玩无需账号或网络。
+所有棋盘、字体回退、音效、AI 与棋谱均在应用内；离线模式无需网络，所有模式均无需账号。
+
+**v1.2.0 好友联机**：同一 Wi-Fi 下，一人在「联机房间」开启局域网服务，朋友连接显示的地址，再输入四位房间号。跨网络需要部署公共房间服务；此版本未内置已上线的公共服务。详见 [联机与部署说明](docs/ONLINE.md)。
 
 ## 功能
 
-- **同屏双人**：两人轮流落子；不包含联机功能。
+- **同屏双人**：两人在一台电脑上轮流落子。
+- **好友联机**：四位房间号，两个取名入座的棋手席位，其余人可旁观。禁手可选，每手 30 秒 / 60 秒 / 2 分钟；双方准备后开局。服务端判定规则与超时，断线自动重连，空房间 10 分钟后清除。
+- **联机胜率分析**：每次落子后由本机 Rapfi 更新黑白局势估计，可以隐藏；使用独立进程，不展示推荐落点、不代下。它不代表保证胜率，也不混入人机胜负统计。
 - **Rapfi 神经网络 AI**：使用 [Rapfi](https://github.com/dhbloo/rapfi) 原生引擎与[官方预训练 Mix9SVQ NNUE 权重](https://github.com/dhbloo/rapfi-networks)，完全离线，CPU 多线程运行。不再划分难度，始终全力搜索。每手思考预算可选 10 / 30 / 60 秒（默认 10 秒）；确定应手时会提前落子。提示、开局练习也使用同一引擎。
 - **本机战绩**：统计与 Rapfi 的胜、负、和与胜率；保留最近 1,000 局，可复盘、导出 JSON。旧 AI 历史保留，不计入 Rapfi 胜率；升级时未完成的旧 AI 对局转为练习局。
 - **四套主题**：松间木纹、课间草稿纸、夜阑石板、竹影浅青。棋盘、背景、棋子可独立搭配。草稿纸使用 ×（黑）和 ○（白）。音效和手数可关闭。
@@ -62,6 +66,8 @@ pnpm test          # 规则、协议、开局数据、存档迁移与统计测�
 pnpm test:native   # 真实 NNUE 加载、强制攻防、禁手、取消请求测试
 pnpm benchmark:ai  # 新旧引擎交换黑白对战，输出 reports/ai-match.json
 pnpm test:ui       # 真正启动 Electron 窗口的端到端测试；需桌面环境
+pnpm test:online   # 两名棋手、一名观众的桌面端联机测试及局域网服务入口
+pnpm server        # 独立房间服务（默认端口 8787）
 pnpm dist:mac      # 在 Mac 上生成 .dmg / .zip
 pnpm dist:win      # 建议在 Windows 上生成 NSIS 安装版和便携版
 ```
@@ -71,8 +77,8 @@ pnpm dist:win      # 建议在 Windows 上生成 NSIS 安装版和便携版
 GitHub Actions 对提交运行测试，分别生成 macOS ARM64、macOS x64 与 Windows x64 下载产物。推送 `v*` 标签后，在所有构建成功时自动创建 GitHub Release 并上传安装包。Mac 包带本地 ad-hoc 签名以保证包内完整性，但没有开发者证书与 Apple 公证；Windows 包未做正式代码签名。
 
 ```sh
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
 ## 项目结构
@@ -87,11 +93,14 @@ scripts/build-engine.mjs 跨平台原生引擎构建
 src/state.js       对局、悔棋、战绩和存档
 src/openings.js    26 种开局与教学内容
 src/app.js         界面、操作和状态协调
+src/online.js      联机房间、旁观、计时与 Rapfi 胜率界面
+src/online-client.js WebSocket 连接、会话恢复与时钟校准
+server/           权威房间服务、生命周期与容器部署文件
 src/style.css     主题与布局
 electron/main.cjs 隔离沙箱窗口、本地自定义协议
 ```
 
-运行时无远程资源、无遥测。Electron 渲染进程关闭 Node 集成，开启上下文隔离和沙箱。应用数据由 Electron 存在系统用户数据目录，卸载程序通常不会主动删除存档。导出的 JSON 是可读备份，当前版本不提供导入功能。
+离线模式运行时无远程资源、无遥测。联网房间将棋手名字、对局操作和房间状态传至你选定的服务，Rapfi 模型仍在本机执行。Electron 渲染进程关闭 Node 集成，开启上下文隔离和沙箱。应用数据由 Electron 存在系统用户数据目录，卸载程序通常不会主动删除存档。导出的 JSON 是可读备份，当前版本不提供导入功能。
 
 ## AI 验证与边界
 

@@ -10,3 +10,59 @@
 .intersection:disabled{opacity:1;cursor:default}.piece{animation:none}.last .piece{animation:place .16s ease-out}
 @media(min-width:981px){.topbar{height:66px}main{padding-top:28px}.page-heading{margin-bottom:24px}.players{margin-top:17px;margin-bottom:17px}.arena{padding-top:18px}.game-layout .board-shell{max-width:min(100%,max(320px,calc(100vh - 450px)))}.match-panel .opponent-icon{margin-top:14px;margin-bottom:8px}.match-panel .difficulty-dots{margin:11px 0 15px}.match-panel .settings-row{padding:8px 0}.stats-preview .rate-row{margin:14px 0 11px}.stats-preview .rate-number{font-size:36px}.learning-teaser{min-height:155px;padding:19px}.learning-teaser h3{font-size:20px;margin-top:8px;line-height:1.45}.game-rail{gap:16px}}
 .engine-badge{display:flex;align-items:center;justify-content:center;gap:5px;color:#8b9c79;font-size:9px;margin:14px 0}.engine-badge .icon{width:12px;height:12px}.engine-progress{font-size:9px;line-height:1.6;color:#8c9a7b;background:var(--accent-soft);padding:9px;border-radius:5px;margin:5px 0 13px}.engine-intro{background:var(--accent-soft);border:1px solid var(--line);padding:14px 16px;border-radius:8px}.engine-intro b{display:block;font-size:13px;color:var(--accent)}.engine-intro span{display:block;font-size:10px;color:var(--muted);margin-top:6px}.engine-stats{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:24px;padding:28px}.engine-stats h2{font:24px "Songti SC",serif;letter-spacing:1px;margin:9px 0}.engine-stats p{font-size:11px;color:var(--muted);margin:8px 0 0}.engine-stats-icon{background:var(--accent-soft);width:64px;height:64px;border-radius:17px;display:grid;place-items:center;color:var(--accent);flex-shrink:0}.engine-stats-icon .icon{width:32px;height:32px}
+:root .online-connection { padding:28px 32px; margin-bottom:24px; }
+.online-connection h2,.online-lobby-card h2 { font-family:"Songti SC",serif; font-size:25px; font-weight:500; margin:10px 0; }
+.online-connection p,.online-lobby-card p { color:var(--muted); font-size:13px; }
+#online-connect-form { display:flex; gap:12px; align-items:flex-end; max-width:850px; margin-top:20px; }
+#online-connect-form .field { flex:1; margin:0; }
+.field input[type=text],.field input:not([type]),.room-code-input { background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:12px 14px; width:100%; }
+#online-connect-form button { min-height:44px; }
+.online-connect-bottom { display:flex; align-items:center; gap:8px; margin-top:16px; font-size:12px; color:var(--muted); }
+.online-connect-bottom .small-link { margin-left:auto; }
+.connection-dot { width:7px; height:7px; border-radius:50%; background:#b1b6ac; }
+.connection-dot.connected { background:#638971; }
+.share-address { padding:16px; border-radius:8px; background:var(--accent-soft); margin-top:18px; display:flex; flex-direction:column; gap:8px; }
+.share-address code { user-select:all; font-size:14px; overflow-wrap:anywhere; }
+.share-address small { color:var(--muted); }
+.online-lobby { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.online-lobby-card { padding:30px 32px; display:flex; flex-direction:column; align-items:flex-start; min-height:260px; }
+.online-lobby-card p { flex:1; margin-bottom:24px; }
+.online-card-number { color:var(--muted); font-size:11px; letter-spacing:2px; }
+#online-join-form { display:flex; gap:12px; width:100%; }
+.room-code-input { font-size:24px; letter-spacing:8px; font-variant-numeric:tabular-nums; max-width:150px; padding:7px 16px; }
+.online-footnote { margin:24px 0; text-align:center; color:var(--muted); font-size:12px; }
+.online-notice { padding:14px 20px; margin-bottom:18px; border:1px solid #dfc690; border-radius:8px; background:#fff6dd; color:#7b642d; }
+.online-seats { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:22px 0 16px; }
+.online-seat { display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:10px; padding:13px 12px; min-width:0; }
+.online-seat.current { border-color:#86a18b; background:var(--accent-soft); }
+.seat-person { display:flex; flex:1; flex-direction:column; gap:6px; min-width:0; }
+.seat-person b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+.seat-person small { color:var(--muted); font-size:10px; }
+.online-seat .stone-dot { width:24px; height:24px; flex-shrink:0; }
+.online-seat .secondary { padding:9px 10px; font-size:11px; white-space:nowrap; }
+.turn-clock { font-size:19px; font-variant-numeric:tabular-nums; font-weight:500; }
+.turn-clock.urgent { color:#b66743; }
+.rate-toggle { display:flex; align-items:center; gap:4px; font-size:11px; font-weight:400; cursor:pointer; }
+.rate-toggle input { accent-color:var(--accent); }
+.winrate-labels { display:flex; justify-content:space-between; margin:25px 0 15px; font-size:12px; gap:8px; }
+.winrate-labels>div { display:flex; align-items:center; gap:5px; }
+.winrate-labels b { font-size:18px; font-variant-numeric:tabular-nums; }
+.winrate-labels .stone-dot { height:14px; width:14px; }
+.winrate-bar { height:12px; border-radius:6px; background:#f1f0e8; border:1px solid #cbd2c8; overflow:hidden; }
+.winrate-bar>span { display:block; height:100%; background:#37493d; transition:width .3s; }
+.rate-detail { font-size:11px; color:var(--muted); margin:12px 0; }
+.rate-waiting { display:flex; align-items:center; justify-content:space-between; margin:27px 0; color:var(--muted); font-size:20px; }
+.rate-waiting span { font-size:12px; }
+.online-rules .rule-switch { margin:20px 0; padding:0; border:0; }
+.online-rules .rule-switch b { font-size:13px; }
+.online-rules .rule-switch small { font-size:10px; }
+.online-rules .field { margin:16px 0; }
+.online-rules .fineprint,.online-rate .fineprint { line-height:1.8; font-size:11px; }
+.watcher-list { display:flex; flex-wrap:wrap; gap:7px; margin-top:18px; }
+.watcher-list span { background:var(--accent-soft); padding:7px 10px; border-radius:6px; font-size:11px; overflow-wrap:anywhere; }
+.watcher-list p { font-size:12px; color:var(--muted); }
+.invite-address { width:100%; border:1px solid var(--line); color:var(--text); background:var(--bg); border-radius:6px; padding:8px; font-size:11px; margin-bottom:8px; }
+.online-invite small { color:var(--muted); font-size:10px; line-height:1.7; }
+.online-game .board.locked .intersection:not(.occupied):hover { background:none; }
+@media(max-width:1100px) { .online-lobby-card { padding:24px; } .online-seat { gap:6px; padding:10px 8px; } .online-seats { gap:8px; } .turn-clock { font-size:16px; } .online-seat .stone-dot { width:20px; height:20px; } }
+@media(max-width:760px) { .online-lobby { grid-template-columns:1fr; } #online-connect-form { flex-wrap:wrap; } #online-connect-form .field { min-width:200px; } .online-seats { grid-template-columns:1fr; } }

@@ -21,6 +21,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      - name: Build and smoke-test standalone room service
+        run: |
+          docker build -f server/Dockerfile -t yijian-rooms .
+          docker run -d --name room-smoke -p 127.0.0.1:8787:8787 yijian-rooms
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8787/health; then break; fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8787/health
+          docker stop room-smoke
   build:
     needs: test
     strategy:
@@ -68,6 +78,9 @@ jobs:
       - name: Native desktop UI tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:ui
+      - name: Three-client online desktop tests
+        if: matrix.platform == 'win' || matrix.arch == 'arm64'
+        run: pnpm test:online
       - run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -99,11 +112,13 @@ jobs:
           files: installers/*
           generate_release_notes: true
           body: |
-            弈间 v1.1.0 · Rapfi 神经网络引擎升级。
+            弈间 v1.2.0 · 好友联机与实时胜率。
 
-            移除旧版四档 AI，接入 Rapfi 官方预训练 Mix9SVQ NNUE 模型。完全离线、全力搜索，支持每手 10 / 30 / 60 秒思考预算。提示和开局练习共用新引擎。旧战绩保留，与 Rapfi 胜率分开统计。
+            新增四位房间号、两个取名棋手席位与旁观席。房主设置黑棋禁手及每手 30 秒 / 60 秒 / 2 分钟，双方准备后开局。支持超时判负、断线重连、再来一局和空房间自动清理。
 
-            自由规则支持 13 / 15 / 19 路；Rapfi 禁手模型使用 15 路棋盘。引擎 GPL 源码和许可随安装包提供。
+            Rapfi 在本机更新黑白胜率估计，可隐藏。原有离线人机、同屏双人、棋谱、主题和战绩保留。
+
+            同一网络可在游戏内开启局域网服务。跨网络需部署仓库提供的房间服务并填写同一服务地址；本版没有默认公共服务器。使用与部署说明见仓库 docs/ONLINE.md。
 
             - mac-arm64：Apple Silicon Mac（M 系列芯片）
             - mac-x64：Intel Mac

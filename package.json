@@ -1,7 +1,7 @@
 {
   "name": "five-in-a-row",
-  "version": "1.1.0",
-  "description": "弈间 · 离线五子棋与开局研习",
+  "version": "1.2.0",
+  "description": "弈间 · 五子棋、人机对弈、好友联机与开局研习",
   "type": "module",
   "main": "electron/main.cjs",
   "author": "mashiro222",
@@ -16,7 +16,9 @@
     "dist:win": "electron-builder --win --publish never",
     "build:engine": "node scripts/build-engine.mjs",
     "test:native": "node scripts/test-native.mjs",
-    "benchmark:ai": "node scripts/benchmark-ai.mjs"
+    "benchmark:ai": "node scripts/benchmark-ai.mjs",
+    "server": "node server/index.mjs",
+    "test:online": "node tests/online-ui.mjs"
   },
   "devDependencies": {
     "electron": "^42.0.0",
@@ -34,7 +36,8 @@
       "src/**/*",
       "assets/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "server/**/*"
     ],
     "mac": {
       "category": "public.app-category.board-games",
@@ -48,7 +51,10 @@
       "notarize": false,
       "binaries": [
         "Contents/Resources/rapfi/pbrain-rapfi"
-      ]
+      ],
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "用于连接同一网络内的五子棋房间和邀请朋友对弈。"
+      }
     },
     "win": {
       "target": [
@@ -95,5 +101,8 @@
         "to": "licenses/APP-LICENSE.txt"
       }
     ]
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
   }
 }
