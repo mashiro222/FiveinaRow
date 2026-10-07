@@ -49,7 +49,7 @@ function createWindow() {
   const engine = new RapfiEngine(engineDirectory, { onProgress: data => { if (!window.isDestroyed()) window.webContents.send('rapfi:progress', data); } });
   const id = window.webContents.id;
   engines.set(id, engine);
-  const evaluator = new RapfiEngine(engineDirectory, { threads: 2, hashMB: 128, onProgress: data => { if (!window.isDestroyed()) window.webContents.send('rapfi:evaluation', data); } });
+  const evaluator = new RapfiEngine(engineDirectory, { threads: 2, hashMB: 128, freshSearch: true, onProgress: data => { if (!window.isDestroyed()) window.webContents.send('rapfi:evaluation', data); } });
   evaluators.set(id, evaluator);
   const closeEngines = () => { engine.close(); evaluator.close(); };
   window.on('closed', () => { closeEngines(); engines.delete(id); evaluators.delete(id); });

@@ -20,11 +20,12 @@ function boardCommand({ size, moves }) {
 }
 
 class RapfiEngine {
-  constructor(directory, { threads, hashMB = 256, onProgress = () => {} } = {}) {
+  constructor(directory, { threads, hashMB = 256, freshSearch = false, onProgress = () => {} } = {}) {
     this.directory = directory;
     this.threads = threads || Math.max(1, Math.min(8, (os.availableParallelism?.() || os.cpus().length) - 2));
     this.hashMB = hashMB;
     this.onProgress = onProgress;
+    this.freshSearch = freshSearch;
     this.child = null;
     this.pending = null;
     this.boardKey = null;
@@ -111,6 +112,10 @@ class RapfiEngine {
     let position;
     try { position = validatePosition(input); } catch (error) { return Promise.reject(error); }
     this.cancel();
+    // Live analysis can replace positions within milliseconds, including after
+    // the engine's immediate opening reply. Use a fresh protocol/search state
+    // for this mode; ordinary AI games keep their warm transposition table.
+    if (this.freshSearch) this.close();
     try { this.start(); } catch (error) { return Promise.reject(error); }
     return new Promise((resolve, reject) => {
       const pending = { position, resolve, reject, started: Date.now(), lastProgress: 0, waiting: true, stats: {depth:0,nodes:0,searchMs:0} };

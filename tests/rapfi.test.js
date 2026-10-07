@@ -64,6 +64,19 @@ test('native Rapfi takes an immediate win and prevents a forced loss',{skip:!nat
  const defense=[108,107,109,0,110,2,111];
  assert.equal((await engine.analyze(position(defense))).index,112);
 });
+test('three live evaluators replace opening searches and still score the latest position', {skip:!native,timeout:60000}, async () => {
+ const evaluators=Array.from({length:3},()=>new RapfiEngine(directory,{threads:2,hashMB:128,freshSearch:true}));
+ try {
+  for(let round=0;round<3;round++)await Promise.all(evaluators.map(async adapter=>{
+   await adapter.analyze(position([],{id:100+round*3,forbidden:true}));
+   const old=adapter.analyze(position([112],{id:101+round*3,forbidden:true,thinkMs:1500}));
+   const cancelled=old.catch(error=>{if(error.code!=='CANCELLED')throw error;});
+   await new Promise(resolve=>setTimeout(resolve,40));adapter.cancel(101+round*3);await cancelled;
+   const latest=await adapter.analyze(position([112,113],{id:102+round*3,forbidden:true,thinkMs:1500}));
+   assert.equal(latest.id,102+round*3);assert.ok(Number.isFinite(latest.blackWinRate));assert.ok(latest.neuralLoaded);
+  }));
+ } finally {for(const adapter of evaluators)adapter.close();}
+});
 test('Renju AI never takes the tempting central double-three',{skip:!native,timeout:10000},async()=>{
  const moves=[111,96,113,128,97,98,127,126];
  const r=await engine.analyze(position(moves,{forbidden:true}));

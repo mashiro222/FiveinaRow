@@ -75,7 +75,10 @@ jobs:
       - name: Native neural engine tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:native
-      - name: Native desktop UI tests
+      - name: Prepare Electron desktop runtime
+        if: matrix.platform == 'win' || matrix.arch == 'arm64'
+        run: node scripts/ensure-electron.cjs
+      - name: Offline desktop UI tests
         if: matrix.platform == 'win' || matrix.arch == 'arm64'
         run: pnpm test:ui
       - name: Three-client online desktop tests
@@ -112,7 +115,7 @@ jobs:
           files: installers/*
           generate_release_notes: true
           body: |
-            弈间 v1.2.0 · 好友联机与实时胜率。
+            弈间 ${{ github.ref_name }} · 好友联机与实时胜率。
 
             新增四位房间号、两个取名棋手席位与旁观席。房主设置黑棋禁手及每手 30 秒 / 60 秒 / 2 分钟，双方准备后开局。支持超时判负、断线重连、再来一局和空房间自动清理。
 
