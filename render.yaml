@@ -1,0 +1,17 @@
+# One free service; no database, disk, paid compute, or extra preview instances.
+services:
+  - type: web
+    name: five-in-a-row-rooms
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    # Room state is in memory. Deploy deliberately when no one is playing.
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0

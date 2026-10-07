@@ -60,18 +60,19 @@ export class OnlineRoom {
     }, 180);
   }
   statusText() {
-    return { idle:'尚未连接', connecting:'正在连接…', connected:'已连接', disconnected:'连接断开，等待重连', replaced:'此会话已在另一窗口打开' }[this.client.status];
+    return { idle:'尚未连接', connecting:'正在连接，免费服务首次唤醒可能需要约一分钟…', waking:'正在唤醒服务并重试，请稍候…', failed:'连接失败，请稍后重试', connected:'已连接', disconnected:'连接断开，等待重连', replaced:'此会话已在另一窗口打开' }[this.client.status];
   }
   hostingCurrentService() { return this.client.url === this.hostLocal || this.hostAddresses.includes(this.client.url); }
   page() {
     const { esc, icon, title } = this.h, c = this.client, r = c.room;
+    const connecting = ['connecting', 'waking', 'disconnected'].includes(c.status);
     if (!r) return `${title('PLAY TOGETHER', '远近之间，共下一局。', '用四位房间号相约，入座对弈，也可以静静旁观。')}
       <section class="panel online-connection"><div><span class="eyebrow">连接棋室</span><h2>先连接同一个房间服务</h2><p>同一 Wi-Fi 下，一人开启局域网服务，再把地址发给朋友。跨网络使用公共服务地址。</p></div>
-      <form id="online-connect-form"><label class="field">房间服务地址<input name="server" id="online-server" type="text" value="${esc(c.url)}" placeholder="wss://你的房间服务/room" required spellcheck="false" autocomplete="off"/></label><button class="secondary" type="submit">连接服务</button></form>
-      <div class="online-connect-bottom"><span class="connection-dot ${c.status === 'connected' ? 'connected' : ''}"></span><span id="online-connection-status">${this.statusText()}</span>${window.roomsHost ? '<button class="small-link" data-online="host">开启局域网服务 →</button>' : ''}</div>
+      <form id="online-connect-form"><label class="field">房间服务地址<input name="server" id="online-server" type="text" value="${esc(c.url)}" placeholder="wss://你的房间服务/room" required spellcheck="false" autocomplete="off"/></label><button class="secondary" type="submit" ${connecting ? 'disabled' : ''}>${connecting ? '连接中…' : '连接服务'}</button></form>
+      <div class="online-connect-bottom"><span class="connection-dot ${c.status === 'connected' ? 'connected' : ''}"></span><span id="online-connection-status">${this.statusText()}</span>${connecting ? '<button class="small-link" data-online="cancel-connect">取消连接</button>' : ''}${window.roomsHost ? '<button class="small-link" data-online="host">开启局域网服务 →</button>' : ''}</div>
       ${this.hostingCurrentService() && this.hostAddresses.length ? `<div class="share-address"><b>朋友在同一 Wi-Fi 下填写这个地址</b>${this.hostAddresses.map(a => `<code>${esc(a)}</code>`).join('')}<small>保持此电脑和游戏运行；系统询问时允许局域网访问。</small></div>` : ''}</section>
-      <div class="online-lobby"><section class="panel online-lobby-card"><span class="online-card-number">01 / 邀请朋友</span><h2>开一间棋室</h2><p>房间号由服务自动分配。进入后选择执黑或执白，双方准备即可开始。</p><button class="primary" data-online="create">${icon('grid')} 创建房间 ${icon('arrow')}</button></section>
-      <section class="panel online-lobby-card"><span class="online-card-number">02 / 赴一场棋约</span><h2>输入房间号</h2><p>进入时默认旁观，有空位即可取名入座。</p><form id="online-join-form"><input name="code" aria-label="四位房间号" class="room-code-input" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" placeholder="0000" required autocomplete="off"/><button class="primary" type="submit">进入房间 ${icon('arrow')}</button></form></section></div>
+      <div class="online-lobby"><section class="panel online-lobby-card"><span class="online-card-number">01 / 邀请朋友</span><h2>开一间棋室</h2><p>房间号由服务自动分配。进入后选择执黑或执白，双方准备即可开始。</p><button class="primary" data-online="create" ${connecting ? 'disabled' : ''}>${icon('grid')} 创建房间 ${icon('arrow')}</button></section>
+      <section class="panel online-lobby-card"><span class="online-card-number">02 / 赴一场棋约</span><h2>输入房间号</h2><p>进入时默认旁观，有空位即可取名入座。</p><form id="online-join-form"><input name="code" aria-label="四位房间号" class="room-code-input" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" placeholder="0000" required autocomplete="off"/><button class="primary" type="submit" ${connecting ? 'disabled' : ''}>进入房间 ${icon('arrow')}</button></form></section></div>
       <p class="online-footnote">房间号仅在同一服务内有效 · 空房间保留 10 分钟 · 联机棋盘为 15 路 · 无需注册账号</p>`;
     const seat = r.seats.indexOf(c.id), mine = seat !== -1, playing = r.phase === 'playing', connected = c.status === 'connected';
     const turn = r.moves.length % 2, canMove = playing && seat === turn && connected;
@@ -79,7 +80,7 @@ export class OnlineRoom {
     const owner = r.owner === c.id, disabled = !connected ? 'disabled' : '';
     const status = r.result ? (r.result.winner ? `${r.result.winner === 1 ? '黑' : '白'}方获胜 · ${r.result.reason}` : '和棋 · 棋逢对手') : playing ? `${turn === 0 ? '黑' : '白'}方思考中${seat === turn ? ' · 轮到你了' : ''}` : '双方入座并准备后开始';
     return `${title('A SHARED MOMENT', `房间 ${r.code}`, `${mine ? '你执' + (seat === 0 ? '黑' : '白') : '你正在旁观'} · ${owner ? '你是房主 · ' : ''}${this.statusText()}`, `<button class="secondary" data-online="leave">离开房间 ${icon('arrow')}</button>`)}
-      ${!connected ? '<div class="online-notice" role="status">连接恢复前无法落子。断线后席位保留 30 秒，落子计时继续；超过宽限期判负。</div>' : ''}
+      ${!connected ? `<div class="online-notice" role="status">连接恢复前无法落子。断线后席位保留 30 秒，落子计时继续；超过宽限期判负。${c.status === 'failed' ? '<button class="small-link" data-online="reconnect">重新连接</button>' : ''}</div>` : ''}
       <div class="game-layout online-game"><section class="arena"><div class="arena-top"><div class="mode-label">${icon('grid')} 好友对弈 <span class="divider"></span><span>15 路棋盘</span></div><span class="pill">${r.settings.forbidden ? '黑棋禁手' : '自由规则'} · 每手 ${r.settings.turnSeconds === 120 ? '2 分钟' : r.settings.turnSeconds + ' 秒'}</span></div>
       <div class="online-seats">${[0, 1].map(i => {
         const member = r.members.find(m => m.id === r.seats[i]);
@@ -129,7 +130,9 @@ export class OnlineRoom {
     const button = event.target.closest('[data-online]'); if (!button) return;
     event.preventDefault(); const action = button.dataset.online, r = this.client.room;
     this.run(async () => {
-      if (action === 'host') {
+      if (action === 'reconnect') await this.client.connect();
+      else if (action === 'cancel-connect') { this.client.stop(); this.h.render(); }
+      else if (action === 'host') {
         button.disabled = true;
         try {
           const data = await window.roomsHost.start(); if (!data.ok) throw new Error(data.error);
