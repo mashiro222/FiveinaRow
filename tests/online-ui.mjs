@@ -48,7 +48,12 @@ try {
  for(const p of [a,b,watcher])await stones(p,1);
  await watcher.locator('[data-online-cell="114"]').click();await stones(watcher,1);
  await b.locator('[data-online-cell="113"]').click();for(const p of [a,b,watcher])await stones(p,2);
- await watcher.waitForSelector('.winrate-labels',{timeout:20000});
+ await watcher.bringToFront();
+ try {await watcher.waitForSelector('.winrate-labels',{timeout:20000});}
+ catch(error){
+  for(const [label,p] of [['black',a],['white',b],['spectator',watcher]])console.error(label,await p.locator('#online-rate-body').textContent(),await p.locator('.board-status').textContent());
+  throw error;
+ }
  const percentages=await watcher.locator('.winrate-labels b').allTextContents();
  assert.ok(Math.abs(percentages.reduce((sum,text)=>sum+parseFloat(text),0)-100)<.01);
  await a.screenshot({path:'test-results/10-online-players.png',fullPage:true});

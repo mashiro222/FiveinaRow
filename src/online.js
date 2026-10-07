@@ -37,7 +37,7 @@ export class OnlineRoom {
     if (visible && this.client.status === 'idle' && this.client.url && this.client.hasSession()) this.run(() => this.client.connect());
   }
   async run(task) { try { await task(); } catch (error) { this.h.toast(error.message); } }
-  cancelAnalysis() { window.rapfi?.cancelEvaluation(this.evaluationId); this.evaluationId++; this.analysisKey = ''; this.evaluation = null; }
+  cancelAnalysis() { clearTimeout(this.analysisTimer); window.rapfi?.cancelEvaluation(this.evaluationId); this.evaluationId++; this.analysisKey = ''; this.evaluation = null; }
   syncAnalysis() {
     const room = this.client.room;
     if (!this.visible || !this.showRate || !room || room.phase !== 'playing' || this.client.status !== 'connected') { this.cancelAnalysis(); return; }
@@ -46,6 +46,10 @@ export class OnlineRoom {
     this.cancelAnalysis(); this.analysisKey = key; this.analysisError = ''; this.evaluating = true;
     if (!window.rapfi?.evaluate) { this.analysisError = '胜率分析需要桌面版 Rapfi'; this.evaluating = false; return; }
     const id = ++this.evaluationId;
+    // Collapse quick consecutive moves before loading another neural evaluator.
+    // A cancelled/hidden position must not leave a delayed search behind.
+    this.analysisTimer = setTimeout(() => {
+    if (id !== this.evaluationId) return;
     window.rapfi.evaluate({ id, moves: [...room.moves], size: 15, forbidden: room.settings.forbidden }).then(data => {
       if (id !== this.evaluationId) return;
       this.evaluating = false;
@@ -53,6 +57,7 @@ export class OnlineRoom {
       else if (Number.isFinite(data.blackWinRate)) this.evaluation = data;
       this.updateRate();
     }).catch(() => { if (id === this.evaluationId) { this.evaluating = false; this.analysisError = 'Rapfi 暂时无法分析'; this.updateRate(); } });
+    }, 180);
   }
   statusText() {
     return { idle:'尚未连接', connecting:'正在连接…', connected:'已连接', disconnected:'连接断开，等待重连', replaced:'此会话已在另一窗口打开' }[this.client.status];
