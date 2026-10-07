@@ -47,9 +47,16 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Native desktop UI tests
+        if: matrix.platform == 'win' || matrix.arch == 'arm64'
+        run: pnpm test:ui
       - run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Verify macOS bundle signature
+        if: matrix.platform == 'mac'
+        shell: bash
+        run: codesign --verify --deep --strict "release/mac${{ matrix.arch == 'arm64' && '-arm64' || '' }}/Five in a Row.app"
       - uses: actions/upload-artifact@v4
         with:
           name: Five-in-a-Row-${{ matrix.platform }}-${{ matrix.arch }}

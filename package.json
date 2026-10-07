@@ -1,6 +1,6 @@
 {
   "name": "five-in-a-row",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "弈间 · 离线五子棋与开局研习",
   "type": "module",
   "main": "electron/main.cjs",
@@ -39,8 +39,10 @@
         "dmg",
         "zip"
       ],
-      "identity": null,
-      "icon": "assets/icon.png"
+      "identity": "-",
+      "icon": "assets/icon.png",
+      "hardenedRuntime": false,
+      "notarize": false
     },
     "win": {
       "target": [

@@ -65,11 +65,11 @@ pnpm dist:win      # 建议在 Windows 上生成 NSIS 安装版和便携版
 
 输出目录为 `release/`。`pnpm test:ui` 会清空测试进程的本机存档，测试进程使用独立的临时数据目录，不影响正常游戏战绩。截图写入 `test-results/`。
 
-GitHub Actions 对提交运行测试，分别生成 macOS ARM64、macOS x64 与 Windows x64 下载产物。推送 `v*` 标签后，在所有构建成功时自动创建 GitHub Release 并上传安装包。未配置签名证书时使用未公证、未正式签名的分发包。
+GitHub Actions 对提交运行测试，分别生成 macOS ARM64、macOS x64 与 Windows x64 下载产物。推送 `v*` 标签后，在所有构建成功时自动创建 GitHub Release 并上传安装包。Mac 包带本地 ad-hoc 签名以保证包内完整性，但没有开发者证书与 Apple 公证；Windows 包未做正式代码签名。
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 ## 项目结构
