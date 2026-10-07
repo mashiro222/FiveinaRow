@@ -16,6 +16,9 @@ try {
    localStorage.setItem('yijian-save-v1',JSON.stringify(saved));
   },{size,pieces});
   await page.reload();await page.waitForSelector('.occupied .piece');
+  // Simulate the larger font metrics that exposed an intrinsic grid track
+  // offset on a CI Mac. Stone centers must be independent of text line height.
+  if(pieces!=='ink')await page.addStyleTag({content:'.piece{line-height:32px}'});
   await page.waitForTimeout(220);
   const errors=await page.locator('[data-cell].occupied').evaluateAll((cells,size)=>{
    const grid=document.querySelector('.board-grid'),matrix=grid.getScreenCTM();
