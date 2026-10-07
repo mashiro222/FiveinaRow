@@ -128,7 +128,11 @@ class RapfiEngine {
       const commands = [];
       const key = `${position.size}:${position.forbidden}`;
       if (key !== this.boardKey) {
-        commands.push(`INFO RULE ${position.forbidden ? 4 : 0}`, `START ${position.size}`, `INFO THREAD_NUM ${this.threads}`, `INFO HASH_SIZE ${this.hashMB * 1024}`, 'INFO STRENGTH 100', 'INFO SHOW_DETAIL 2', 'INFO PONDERING 0');
+        // START lazily creates the default one-thread pool. Replacing that pool
+        // immediately can destroy a worker before its init task has started,
+        // deadlocking Rapfi's SearchThread destructor on Windows. Set the final
+        // pool size first so START never creates a short-lived default worker.
+        commands.push(`INFO RULE ${position.forbidden ? 4 : 0}`, `INFO THREAD_NUM ${this.threads}`, `START ${position.size}`, `INFO HASH_SIZE ${this.hashMB * 1024}`, 'INFO STRENGTH 100', 'INFO SHOW_DETAIL 2', 'INFO PONDERING 0');
         this.boardKey = key;
         this.neuralLoaded = false;
       }

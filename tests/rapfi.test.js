@@ -33,7 +33,7 @@ test('commands wait for readiness when a move was printed before search cleanup 
  try{
   const result=await guarded.analyze(position([]));
   assert.equal(result.index,112);assert.deepEqual(writes.slice(0,3),['ABOUT\n','ABOUT\n','ABOUT\n']);
-  assert.equal(writes.length,4);assert.match(writes[3],/INFO RULE 0\nSTART 15/);
+  assert.equal(writes.length,4);assert.match(writes[3],/INFO RULE 0\nINFO THREAD_NUM \d+\nSTART 15/);
  }finally{guarded.close();}
 });
 test('Rapfi WINRATE is converted from side-to-move into black probability, including streamed updates', async () => {
