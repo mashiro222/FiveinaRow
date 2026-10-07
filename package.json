@@ -1,6 +1,6 @@
 {
   "name": "five-in-a-row",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "弈间 · 五子棋、人机对弈、好友联机与开局研习",
   "type": "module",
   "main": "electron/main.cjs",
