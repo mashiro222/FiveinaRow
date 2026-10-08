@@ -1,128 +1,96 @@
+<div align="center">
+
 # 弈间 · Five in a Row
 
-一方棋盘，万般可能。一个中文界面的五子棋桌面游戏，支持离线游玩与好友联机，适用于 macOS 与 Windows。
+**一方棋盘，万般可能。**
 
-![弈间主界面](assets/screenshot.png)
+一款让你慢下来、认真下一局的五子棋桌面游戏。与朋友同屏或联机对弈，也可以和离线 Rapfi AI 切磋、练习开局。
 
-## 下载游玩
+**简体中文** · [English](README.en.md)
 
-在 [Releases](https://github.com/mashiro222/FiveinaRow/releases) 下载对应平台的安装包：
+[![最新版本](https://img.shields.io/github/v/release/mashiro222/FiveinaRow?color=496b56&label=release)](https://github.com/mashiro222/FiveinaRow/releases/latest)
+[![构建状态](https://github.com/mashiro222/FiveinaRow/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/mashiro222/FiveinaRow/actions/workflows/build.yml)
+![平台](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-697965)
 
-- **Apple Silicon Mac（M 系列芯片）**：`mac-arm64.dmg`，打开后把游戏拖到 Applications。
-- **Intel Mac**：`mac-x64.dmg`。
-- **Windows 64 位**：`.exe` 安装包或便携版。安装包文件名带 `Setup`，便携版带 `Portable`。
+[下载游戏](https://github.com/mashiro222/FiveinaRow/releases/latest) · [好友联机](docs/ONLINE.md) · [开发指南](docs/DEVELOPMENT.md) · [反馈问题](https://github.com/mashiro222/FiveinaRow/issues)
 
-当前版本未购买开发者签名证书，也未做 Apple 公证。macOS 首次运行若被 Gatekeeper 拦截，请在尝试打开后，进入「系统设置 → 隐私与安全性 → 仍要打开」。Windows 可能显示 SmartScreen 提示。不要关闭系统的全局安全保护。
+</div>
 
-所有棋盘、字体回退、音效、AI 与棋谱均在应用内；离线模式无需网络，所有模式均无需账号。
+![弈间 v1.4.1 实机截图：木纹棋盘与 Rapfi 对弈](assets/screenshot.png)
 
-**免费公共棋室**：已内置免费的公网房间服务。打开「联机房间」，一人创建房间，朋友输入四位房号即可异地对弈或旁观；旧版保存过局域网地址的玩家可点击「使用公共棋室」。免费服务休眠后首次连接可能需要约一分钟，游戏会自动等待和重试；平台重启会清空房间。同一 Wi-Fi 下仍可开启局域网服务。详见 [联机与部署说明](docs/ONLINE.md)。
+> **游戏界面目前为中文。** 中英文切换仅用于本项目的介绍文档。截图来自 v1.4.1。
 
-**v1.4.1 棋谱升级**：26 种开局分别计算禁手和自由规则，内置筛选后的 149 条六手分支，支持棋盘候选点与手顺导航。修复草稿纸 O / X 棋子偏移，并在棋谱中显示手数。
+## 下载，开始一局
 
-**Rapfi 陪练**：在「开始新对局 → 选择对手」切换陪练，强度可调 0–90，默认 20 / 每手 1 秒；原有全力 Rapfi 保留。太强可先调至 0，适应后再逐步提高。提示和联机局势分析始终使用全力引擎。
+打开 **[最新版本下载页](https://github.com/mashiro222/FiveinaRow/releases/latest)**，在 **Assets** 中选择对应文件，无需下载源码或安装开发工具。
 
-## 功能
+| 你的电脑 | 下载文件 | 使用方式 |
+| --- | --- | --- |
+| Apple Silicon Mac（M 系列芯片） | `Five-in-a-Row-版本号-mac-arm64.dmg` | 打开后拖入 Applications |
+| Intel Mac | `Five-in-a-Row-版本号-mac-x64.dmg` | 打开后拖入 Applications |
+| Windows 64 位 | `Five-in-a-Row-版本号-win-x64-Setup.exe` | 运行安装程序 |
+| Windows 64 位，免安装 | `Five-in-a-Row-版本号-win-x64-Portable.exe` | 下载后直接运行 |
 
-- **同屏双人**：两人在一台电脑上轮流落子。
-- **好友联机**：四位房间号，两个取名入座的棋手席位，其余人可旁观。禁手可选，每手 30 秒 / 60 秒 / 2 分钟；双方准备后开局。服务端判定规则与超时，断线自动重连，空房间 10 分钟后清除。
-- **联机胜率分析**：每次落子后由本机 Rapfi 更新黑白局势估计，可以隐藏；使用独立进程，不展示推荐落点、不代下。它不代表保证胜率，也不混入人机胜负统计。
-- **Rapfi 神经网络 AI**：使用 [Rapfi](https://github.com/dhbloo/rapfi) 原生引擎与[官方预训练 Mix9SVQ NNUE 权重](https://github.com/dhbloo/rapfi-networks)，完全离线，CPU 多线程运行。提供全力和陪练两种对手。陪练使用引擎原生 `INFO STRENGTH`，同时降低搜索深度并在候选落点间引入选择变化；不替换神经网络、不随机乱下。陪练强度 0–90（默认 20），全力为 100。每手预算可选 0.5 / 1 / 3 / 10 / 30 / 60 秒；陪练默认 1 秒，全力默认 10 秒，确定应手会提前落子。强度不是百分比胜率或 Elo。提示至少使用 10 秒预算和全力强度；开局练习使用全力引擎。
-- **本机战绩**：陪练与全力 Rapfi 分开统计胜、负、和与胜率，陪练还可按强度筛选；保留最近 1,000 局，可复盘、导出 JSON。旧 AI 历史保留，不计入 Rapfi 胜率；升级时未完成的旧 AI 对局转为练习局。
-- **四套主题**：松间木纹、课间草稿纸、夜阑石板、竹影浅青。棋盘、背景、棋子可独立搭配。草稿纸使用 ×（黑）和 ○（白）。音效和手数可关闭。
-- **棋盘大小**：13 × 13、15 × 15、19 × 19；15 路为标准大小。Rapfi 的禁手权重仅支持 15 路，人机禁手对局固定为 15 路。同屏双人在其他尺寸上的禁手属于休闲扩展。
-- **26 种经典开局**：直指与斜指各 13 种，前三手保留标准命名棋形，第 4–6 手改为全力 Rapfi 筛选的多条变化。禁手与自由规则分别计算；可点棋盘候选、手顺、滑块比较变化。接着练习沿用当前分支和规则，可选陪练或全力引擎。
-- **可选黑棋禁手**：三三、四四、长连。区分同一活四的两个成五点、同方向多个四、断三、假三，以及延伸点本身形成禁手的情况。
-- **辅助功能**：悔棋、落子提示、认输、胜利连线、键盘方向键移动焦点、Enter / Space 落子。
+应用免费、无需账号。AI、棋谱和主题随安装包提供，离线玩法无需网络。
 
-## 规则与统计口径
+<details>
+<summary>首次打开时，系统出现安全提示？</summary>
 
-自由规则下，双方连续五子或更多即获胜。启用禁手后，黑棋必须恰好连五，白棋连五及长连均胜。黑棋同时形成恰好五连时，按 RIF 第 9.2 条优先判胜。活三判定递归检验扩展为活四的落点是否合法。禁手落点被拦截，玩家可以重新选点，**不是比赛中落下禁手直接判负的处罚方式**。如黑棋无合法落点则判负。
+当前安装包没有 Apple 开发者证书与公证，也没有 Windows 正式代码签名。Mac 包使用 ad-hoc 签名验证文件完整性。
 
-本应用使用自由落子开局，**没有实施三手交换、五手两打、Swap2 或其他比赛开局协议**，因此不称为完整的 RIF 竞赛模式。
+请从本仓库 Releases 下载。macOS 尝试打开后若被拦截，可进入「系统设置 → 隐私与安全性 → 仍要打开」。Windows 可能显示 SmartScreen 提示。不要关闭系统的全局安全保护。
 
-正式胜率 = 正式胜局 ÷ 正式对局数（含和棋）。使用提示、悔棋、开局练习的对局标记为练习，不计正式胜率。同屏双人不计 AI 战绩。认输计入结果；放弃未结束的对局并新开一局不计胜负。陪练与全力 Rapfi 分组统计，陪练可按强度筛选；各组汇总不同执子、尺寸、禁手设置和思考预算，历史记录保留这些信息、强度及模型标识。升级前的 Rapfi 记录仍归属全力组。旧版 AI 胜负仅在历史中展示。旧版 13 / 19 路禁手存档仍保留，但继续使用新引擎需要新开 15 路对局。
+</details>
 
-开局前三手和名称核对自 [Renju International Federation 开局图](https://www.renju.net/openings/)。第 4–6 手使用固定版本全力 Rapfi 计算：每个根局面 30 秒预算、6 候选、2 线程、256 MB 缓存；数量不足时再对第 5 或第 6 手局面追加同规格搜索。筛选同一局面中评估落后不超过 200 分且引擎胜率估计相差不超过 8 个百分点的候选，并去除保留前三手的对称重复，每种规则最多保留 3 条。原始搜索输出与参数见 [根局面分析](reports/opening-analysis.json) 和 [续走分析](reports/opening-extra-analysis.json)。这些是有限搜索得到的候选，**不是经过求解器认证的唯一最优定式**；不同深度、硬件和时间预算可能得到不同结果。逐手文字仅描述可验证的棋形联系，不冒充神经网络的推理过程。本库没有完整开局必胜证明，因此不把某个开局名称标记为“保证获胜”。规则参考 [RIF International Rules of Renju](https://www.renju.net/rifrules/)，重点参见第 3、9 节。
+## 想怎么下，就怎么下
 
-## 开发运行
+| 玩法 | 你可以做什么 |
+| --- | --- |
+| **同屏双人** | 和朋友共用一台电脑，轮流落子 |
+| **好友联机** | 创建四位房号，取名入座；两人下棋，其他人旁观。支持禁手与每手 30 秒 / 60 秒 / 2 分钟限时 |
+| **离线 AI** | 挑战全力 Rapfi，或选择强度 0–90 的陪练；默认陪练强度 20，可自行调低 |
+| **棋谱研习** | 学习 26 种命名开局，比较 149 条六手变化，再从当前局面接着练习 |
+| **棋室装扮** | 木纹、草稿纸、石板、浅青四种风格，棋盘、背景、棋子自由搭配；草稿纸可以用 × / ○ 落子 |
+| **战绩与复盘** | 本机保存最近 1,000 局 AI 对战记录，陪练与全力分开统计，可回看棋谱、导出 JSON |
 
-需要 Node.js 24 或更新的兼容版本、pnpm 11.25.0、CMake 3.20+ 与 C++17 编译器。Mac 安装 Xcode Command Line Tools；Windows 安装 Visual Studio C++ 工具、Windows SDK 与 ClangCL。引擎源码和权重已随仓库提供，构建引擎无需下载或训练。
+还有 13 / 15 / 19 路棋盘、黑棋禁手、悔棋、提示、手数显示、音效和键盘落子。人机禁手对局使用 15 路棋盘；好友联机固定为 15 路。
 
-```sh
-npm install -g pnpm@11.25.0
-pnpm install
-pnpm build:engine  # 为当前系统及 CPU 架构编译 Rapfi
-pnpm start
-```
+### 和朋友约一局
 
-浏览器预览（支持界面与同屏双人；Rapfi 原生引擎需要桌面程序）：
+1. 双方打开「联机房间」，使用内置公共棋室。
+2. 一人创建房间，把四位房号发给朋友；朋友输入房号进入。
+3. 取名选择黑白席位，房主设置规则，双方准备后开局。
 
-```sh
-pnpm dev
-# 打开 http://127.0.0.1:5173
-```
+免费公共服务休眠后，首次连接可能需要约一分钟，游戏会自动等待和重试。服务重启会清空房间；空房间保留 10 分钟。四位房号是加入入口，不是保密密码。也支持同一 Wi-Fi 下开房和自建服务，见 [联机与部署说明](docs/ONLINE.md)。
 
-## 测试与打包
+### 学开局，也练自己的判断
 
-```sh
-pnpm test          # 规则、协议、开局数据、存档迁移与统计测试
-pnpm test:native   # 真实 NNUE 加载、强制攻防、禁手、取消请求测试
-pnpm benchmark:ai  # 新旧引擎交换黑白对战，输出 reports/ai-match.json
-pnpm benchmark:strength # 陪练 0 / 20 与全力引擎交换黑白对战
-pnpm test:ui       # 真正启动 Electron 窗口的端到端测试；需桌面环境
-pnpm test:study    # 全部开局、规则、分支切换和接着练习
-pnpm test:appearance # 棋子与网格交叉点的几何对齐
-pnpm build:openings # 重新计算并筛选内置棋谱（耗时，可续跑；非普通打包步骤）
-pnpm test:online   # 两名棋手、一名观众的桌面端联机测试及局域网服务入口
-pnpm test:public   # 三个桌面客户端连接真实公共服务（需联网，手动部署验收）
-pnpm server        # 独立房间服务（默认端口 8787）
-pnpm dist:mac      # 在 Mac 上生成 .dmg / .zip
-pnpm dist:win      # 建议在 Windows 上生成 NSIS 安装版和便携版
-```
+![弈间 v1.4.1 棋谱研习：草稿纸棋盘、编号棋子与六手分支](assets/study.png)
 
-打包前须先运行 `pnpm build:engine`。交叉编译 Intel Mac 使用 `pnpm build:engine --arch=x64`；打包脚本会拒绝错误架构的引擎。输出目录为 `release/`。`pnpm test:ui` 会清空测试进程的本机存档，测试进程使用独立的临时数据目录，不影响正常游戏战绩。截图写入 `test-results/`。
+26 种开局的名称与前三手按 [国际连珠联盟开局图](https://www.renju.net/openings/) 校对。第 4–6 手由全力 Rapfi 分别按禁手、自由规则分析，内置 **149 条六手变化**。每个开局、每套规则最多三条，少数局面只保留一到两条通过筛选的变化。
 
-GitHub Actions 对提交运行测试，分别生成 macOS ARM64、macOS x64 与 Windows x64 下载产物。推送 `v*` 标签后，在所有构建成功时自动创建 GitHub Release 并上传安装包。Mac 包带本地 ad-hoc 签名以保证包内完整性，但没有开发者证书与 Apple 公证；Windows 包未做正式代码签名。
+可以点选棋盘候选、切换分支、逐手查看，再选择自己执黑或执白，与陪练或全力 Rapfi 接着下。所有棋谱均已预计算，学习时无需联网或等待引擎重新生成。
 
-```sh
-git tag v1.4.1
-git push origin v1.4.1
-```
+这些是有限搜索得到的优质参考，**不是唯一最优解或必胜证明**。分析参数、原始输出和筛选方法见 [棋谱生成方法](docs/DEVELOPMENT.md#棋谱生成方法)。
 
-## 项目结构
+## 关于 AI、规则与胜率
 
-```text
-src/engine.js      连五、四四、递归活三与禁手判定
-src/ai.js          引擎标识、陪练强度、提示与思考预算配置
-electron/rapfi.cjs 原生 Rapfi 进程、模型校验与协议适配
-electron/preload.cjs 受限的引擎通信接口
-third_party/rapfi/ 固定版本引擎源码、官方权重与许可证
-scripts/build-engine.mjs 跨平台原生引擎构建
-src/state.js       对局、悔棋、战绩和存档
-src/openings.js    26 种标准前三手与教学内容
-src/opening-lines.js 预计算的 Rapfi 六手分支与分析参数
-src/study.js       棋谱分支、候选点与逐手棋形观察
-src/app.js         界面、操作和状态协调
-src/online.js      联机房间、旁观、计时与 Rapfi 胜率界面
-src/online-client.js WebSocket 连接、会话恢复与时钟校准
-server/           权威房间服务、生命周期与容器部署文件
-src/style.css     主题与布局
-electron/main.cjs 隔离沙箱窗口、本地自定义协议
-```
+- **Rapfi**：使用 [原生 Rapfi 引擎](https://github.com/dhbloo/rapfi) 和[官方预训练 Mix9SVQ NNUE 权重](https://github.com/dhbloo/rapfi-networks)，在本机 CPU 上运行。陪练使用引擎原生强度控制，全力为 100；强度数值不是胜率或 Elo。
+- **思考预算**：可选 0.5 / 1 / 3 / 10 / 30 / 60 秒。陪练默认 1 秒，全力默认 10 秒；确定应手可能提前落子。提示使用全力，预算至少 10 秒。
+- **可选禁手**：黑棋禁止三三、四四、长连；恰好连五优先判胜。违法落点会被拦截，可重新选择。没有三手交换、五手两打或 Swap2，因此不是完整的比赛开局模式。自由规则下，双方五子及以上均获胜。
+- **正式胜率**：胜局 ÷ 正式对局数（含和棋）。提示、悔棋、开局练习不计正式胜率；陪练与全力分组统计。同屏和联机不混入 AI 战绩。未结束便放弃的对局不计胜负。
+- **联机局势条**：由每位玩家本机的全力 Rapfi 估计黑白局势，可隐藏；不会替棋手落子，也不代表保证胜率。
 
-离线模式运行时无远程资源、无遥测。联网房间将棋手名字、对局操作和房间状态传至你选定的服务，Rapfi 模型仍在本机执行。Electron 渲染进程关闭 Node 集成，开启上下文隔离和沙箱。应用数据由 Electron 存在系统用户数据目录，卸载程序通常不会主动删除存档。导出的 JSON 是可读备份，当前版本不提供导入功能。
+## 数据与隐私
 
-## AI 验证与边界
+离线模式不请求远程资源，不含遥测。设置、棋谱和战绩保存在本机；导出的 JSON 可作备份，当前版本暂不支持导入。
 
-Rapfi 在 [Gomocup 2025 官方结果](https://gomocup.org/results/gomocup-result-2025/) 的五个组别中排名第一。这里接入同一项目的公开引擎和官方权重，但具体硬件、版本与思考预算不同，不宣称复现比赛棋力或保证必胜。
+联机时，棋手名字、对局操作和房间状态发送到所选房间服务，Rapfi 仍在本机运行。房间暂存在服务器内存，重启后不保留。更多实现与检查说明见 [开发指南](docs/DEVELOPMENT.md) 和 [安全说明](SECURITY.md)。
 
-本机回归赛：4 个固定开局，各交换黑白，自由和禁手规则各 4 局；Rapfi 每手 0.4 秒 / 2 线程，旧版最高档每手 2.2 秒 / 单 JS 线程。Rapfi **8 胜 0 负 0 和**，没有达到回合上限。完整棋谱与搜索数据见 [reports/ai-match.json](reports/ai-match.json)。这是小样本新旧版本对比，不是 Elo 评级。正式游戏默认时间预算为 10 秒。
+## 开发与致谢
 
-陪练使用 Rapfi 官方 [SkillMovePicker](https://github.com/dhbloo/rapfi/blob/master/Rapfi/search/skill.h)；普通搜索中强度 0 的主迭代深度上限为 4，20 为 7，全力 100 不启用该限制。它仍保留神经网络判断和战术搜索，所以低强度也可能抓住明显的杀棋，不能保证某个玩家达到固定胜率。只缩短时间通常也会减弱，但与棋力并非线性关系。切换陪练强度或使用全力提示时重建搜索进程，避免强模式的缓存流入弱模式。
+技术栈为 Electron、原生 JavaScript 和独立 Rapfi 进程，房间服务使用 Node.js / WebSocket。源码构建、测试、打包与引擎验证见 **[开发指南](docs/DEVELOPMENT.md)**。
 
-陪练回归赛：两个固定开局（自由、禁手各一），强度 0 和 20 分别交换黑白对抗全力引擎，双方均为每手 1 秒 / 2 线程 / 64 MB 搜索缓存。此次全力引擎 **8 胜 0 负**；棋谱与搜索深度见 [reports/coach-match.json](reports/coach-match.json)。这验证了当前设置在这组局面中的棋力差距，不代表对人类的固定胜率；陪练带随机选择，重复结果可能不同。
+感谢 [Rapfi](https://github.com/dhbloo/rapfi) 及其贡献者提供引擎与预训练模型，感谢 [国际连珠联盟](https://www.renju.net/) 提供规则与开局资料。
 
-每次引擎启动校验权重 SHA-256；缺文件、模型失效、进程异常会显示错误，不会偷偷换回弱 AI。游戏进程与原生搜索进程分离，悔棋、新开局及窗口关闭会取消过时计算。
-
-本项目自有代码使用 MIT License。随附 Rapfi 引擎使用 GPL-3.0-or-later，官方神经网络权重使用 CC0-1.0；完整对应引擎源码、许可证和构建说明随安装包提供。详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+应用自有代码采用 [MIT License](LICENSE)。随附 Rapfi 引擎为 **GPL-3.0-or-later**，官方神经网络权重为 **CC0-1.0**；安装包包含对应引擎源码及许可证。各组件许可范围见 [第三方声明](THIRD_PARTY_NOTICES.md)。

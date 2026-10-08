@@ -6,7 +6,7 @@ Official weights: https://github.com/dhbloo/rapfi-networks/tree/e32ad77a5364363b
 
 `source.tar.gz` is a `git archive` of the exact upstream source commit, with the prefix `rapfi/`. The engine code is unmodified. All code needed for the native engine build is included. Unused upstream submodules are not needed by this build. Licenses of bundled dependencies remain within the source archive. `COPYING.txt` is the GPL-3.0 license; the source specifies GPL-3.0-or-later. Neural weights use CC0-1.0 in `NETWORKS-LICENSE.txt`.
 
-Application configuration selects Mix9SVQ neural evaluation and UCI-like progress messages. The unused standard-rule neural-network entry is omitted; the application offers freestyle and Renju. All model paths are relative to the native executable's working directory. Search strength is set to 100 by the application, with no artificial handicap.
+Application configuration selects Mix9SVQ neural evaluation and UCI-like progress messages. The unused standard-rule neural-network entry is omitted; the application offers freestyle and Renju. All model paths are relative to the native executable's working directory. Full-strength play uses strength 100 with no artificial handicap. The optional practice opponent uses the engine's native `INFO STRENGTH` setting (0–90, default 20). Hints and online evaluations always use strength 100; opening practice lets the player choose either opponent.
 
 ## Build from the repository
 

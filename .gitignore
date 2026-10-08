@@ -1,7 +1,17 @@
 node_modules/
+.pnpm-store/
 release/
 test-results/
 .DS_Store
 *.log
 .runtime/
 native/
+
+# Local secrets and signing material must not be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
