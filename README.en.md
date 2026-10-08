@@ -6,6 +6,8 @@
 
 A Gomoku desktop game for a thoughtful match: play a friend locally or online, challenge an offline Rapfi AI, and explore opening variations.
 
+**Think first, ask for a hint, then undo and try again—build your judgment by comparing moves with Rapfi.**
+
 [简体中文](README.md) · **English**
 
 [![Latest release](https://img.shields.io/github/v/release/mashiro222/FiveinaRow?color=496b56&label=release)](https://github.com/mashiro222/FiveinaRow/releases/latest)
@@ -49,11 +51,24 @@ Download from this repository's Releases page. If macOS blocks the app after you
 | **Local two-player** | Share one computer and take turns |
 | **Online rooms** | Share a four-digit room code, choose a name and take a seat; two people play while others watch. Select forbidden-move rules and a 30-second, 60-second or 2-minute limit per move |
 | **Offline AI** | Challenge full-strength Rapfi or choose a practice opponent with strength 0–90; the default is 20 and can be lowered |
+| **Hints and undo** | Compare your intended move with full-strength Rapfi's suggestion, take back a move and explore a different attack or defense |
 | **Opening study** | Explore 26 named openings and 149 six-ply variations, then continue from the displayed position |
 | **Custom themes** | Mix boards, backgrounds and stones across wood, notebook paper, slate and pale-green styles; use × / ○ marks on paper |
 | **Records and replay** | Keep up to 1,000 AI game records locally, with separate practice-opponent and full-strength statistics, move replay and JSON export |
 
-Also includes 13×13, 15×15 and 19×19 boards, optional Black forbidden moves, undo, hints, move numbers, sound and keyboard controls. AI games with forbidden moves use 15×15; online games always use 15×15.
+Also includes 13×13, 15×15 and 19×19 boards, optional Black forbidden moves, move numbers, sound and keyboard controls. AI games with forbidden moves use 15×15; online games always use 15×15.
+
+### Turn each game into practice with hints and undo
+
+During an AI game, pause to compare: **How does the move I had in mind differ from Rapfi's suggestion?**
+
+1. **Think first.** On your turn, choose a candidate move and consider what it attacks or defends.
+2. **Ask for a hint.** Select **提示** (Hint) to have full-strength Rapfi analyze the position and mark a suggested move. You decide whether to play it. Hints use full strength and at least a 10-second budget, even against a weaker practice opponent.
+3. **Take it back and try again.** Before the game ends, **悔棋** (Undo) returns to the position before your last move, also removing the AI's reply if it has already played. Try another move, with a hint if useful, and see how the AI responds.
+
+A weaker opponent can keep the game approachable while full-strength hints help you check your judgment at key moments. Replaying a position lets you compare how attacks and defenses develop. Hints suggest a move; understanding the position comes from your own observation and experimentation.
+
+**Experiment freely: using a hint or undo marks the game as practice and excludes it from your recorded win rate. Completed AI games still remain available for replay.** These aids are for offline play; online rooms do not offer undo or suggested moves.
 
 ### Play a friend
 
